@@ -17,6 +17,8 @@ PARAMS = [
     "concurrency",
     "source_min_interval_s",
     "model_max_output_tokens",
+    "rate_limit_per_minute",
+    "max_concurrent_requests",
 ]
 
 

@@ -34,6 +34,8 @@ class RuntimeConfig(BaseModel):
     concurrency: PositiveInt
     source_min_interval_s: NonNegativeFloat
     model_max_output_tokens: PositiveInt
+    rate_limit_per_minute: PositiveInt
+    max_concurrent_requests: PositiveInt
 
 
 class Secrets(BaseModel):

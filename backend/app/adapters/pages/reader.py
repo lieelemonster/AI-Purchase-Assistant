@@ -1,6 +1,6 @@
 import hashlib
 from datetime import datetime, timezone
-from typing import List, Optional, Tuple
+from typing import List, NamedTuple, Optional, Tuple
 from urllib.parse import urljoin
 
 import httpx
@@ -14,10 +14,16 @@ USER_AGENT = "AIBuyAssistant/0.1 (+official product page reader)"
 MAX_LINKS = 500
 
 
-class _FetchFailed(Exception):
+class FetchError(Exception):
     def __init__(self, reason: str):
         super().__init__(reason)
         self.reason = reason
+
+
+class FetchedPage(NamedTuple):
+    final_url: str
+    body: bytes
+    charset: Optional[str]
 
 
 class PageReader:
@@ -39,8 +45,8 @@ class PageReader:
     async def read(self, url: str, evidence_id: str) -> EvidenceDocument:
         fetched_at = datetime.now(timezone.utc)
         try:
-            final_url, body, charset = await self._fetch(url)
-        except _FetchFailed as e:
+            final_url, body, charset = await self.fetch(url)
+        except FetchError as e:
             return EvidenceDocument(evidence_id=evidence_id, url=url, fetched_at=fetched_at,
                                     fetch_status="unavailable", failure_reason=e.reason)
         title, text, links = extract_page(body, charset, base_url=final_url)
@@ -56,7 +62,8 @@ class PageReader:
             links=links,
         )
 
-    async def _fetch(self, url: str) -> Tuple[str, bytes, Optional[str]]:
+    async def fetch(self, url: str) -> FetchedPage:
+        """经过安全检查和体积限制取回原始 HTML；失败时抛出 FetchError。"""
         current = url
         async with httpx.AsyncClient(
             transport=self._transport,
@@ -71,35 +78,35 @@ class PageReader:
                         if resp.is_redirect:
                             current = urljoin(current, resp.headers["location"])
                             continue
-                        return current, await self._read_body(resp), resp.charset_encoding
+                        return FetchedPage(current, await self._read_body(resp), resp.charset_encoding)
                 except httpx.TimeoutException as e:
-                    raise _FetchFailed("timeout") from e
+                    raise FetchError("timeout") from e
                 except httpx.HTTPError as e:
-                    raise _FetchFailed("network") from e
-        raise _FetchFailed("too_many_redirects")
+                    raise FetchError("network") from e
+        raise FetchError("too_many_redirects")
 
     async def _check(self, url: str, *, is_redirect: bool) -> None:
         try:
             await check_url(url, resolve=self._resolve)
         except UnsafeUrlError as e:
             if e.reason == "dns_failed":
-                raise _FetchFailed("dns_failed") from e
-            raise _FetchFailed("unsafe_redirect" if is_redirect else "unsafe_url") from e
+                raise FetchError("dns_failed") from e
+            raise FetchError("unsafe_redirect" if is_redirect else "unsafe_url") from e
 
     async def _read_body(self, resp: httpx.Response) -> bytes:
         if resp.status_code >= 400:
-            raise _FetchFailed(f"http_{resp.status_code}")
+            raise FetchError(f"http_{resp.status_code}")
         content_type = resp.headers.get("content-type", "").split(";")[0].strip().lower()
         if content_type not in HTML_TYPES:
-            raise _FetchFailed("not_html")
+            raise FetchError("not_html")
         declared = resp.headers.get("content-length")
         if declared and declared.isdigit() and int(declared) > self._max_page_bytes:
-            raise _FetchFailed("too_large")
+            raise FetchError("too_large")
         body = bytearray()
         async for chunk in resp.aiter_bytes():
             body.extend(chunk)
             if len(body) > self._max_page_bytes:
-                raise _FetchFailed("too_large")
+                raise FetchError("too_large")
         return bytes(body)
 
 

@@ -1,3 +1,4 @@
+import re
 from typing import Annotated, List, Literal, Optional, Set, Tuple, Union
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -16,8 +17,11 @@ TASK = (
     "2. 不要补充用户没说的内容。没提到或说不确定的信息（如预算、用途、品牌偏好）放进 unknowns，不要猜测数值。\n"
     "3. topic 和 unknowns 优先使用问卷中的问题 ID（见 questions）；不属于任何问题的，用简短的英文小写词。\n"
     "4. strictness：用户明确表示必须满足或不能超过的写 hard，倾向性的写 soft，无法判断的写 unknown。\n"
-    "5. 两条需求互相矛盾时，在 conflicts 中说明，并用 requirement_indexes 指出是 requirements 中的哪几条（从 0 开始）。"
+    "5. 两条需求互相矛盾时，在 conflicts 中说明，并用 requirement_indexes 指出是 requirements 中的哪几条（从 0 开始）。\n"
+    "6. 用户在原话里写了明确的预算金额时，topic 写 budget，并在 budget_min_yuan / budget_max_yuan 填写金额（单位：元）；"
+    "没有明确金额就不要填。"
 )
+BUDGET_TOPIC = "budget"
 
 
 class InvalidNeedInput(ValueError):
@@ -42,6 +46,8 @@ class ExtractedRequirement(BaseModel):
     statement: str = Field(min_length=1)
     strictness: Literal["hard", "soft", "unknown"] = "unknown"
     source: Annotated[Union[_OptionRef, _TextRef], Field(discriminator="kind")]
+    budget_min_yuan: Optional[int] = Field(default=None, ge=0)
+    budget_max_yuan: Optional[int] = Field(default=None, ge=0)
 
 
 class ExtractedConflict(BaseModel):
@@ -75,6 +81,46 @@ def validate_answers(config: OptionConfig, answers: List[OptionAnswer]) -> None:
                 raise InvalidNeedInput(f"问题 {answer.question_id} 没有选项 {option_id}")
         if not question.multiple and len(answer.option_ids) > 1:
             raise InvalidNeedInput(f"问题 {answer.question_id} 是单选题")
+
+
+OPTION_BUDGET = re.compile(r"^(?:under_(\d+)|(\d+)_(\d+)|over_(\d+))$")
+
+
+def _option_budget(option_id: str) -> Optional[Tuple[Optional[int], Optional[int]]]:
+    """预算选项的稳定 ID 本身就写明了范围，如 under_5000、5000_8000、over_12000（单位：元）。"""
+    match = OPTION_BUDGET.match(option_id)
+    if match is None:
+        return None
+    under, low, high, over = match.groups()
+    if under:
+        return None, int(under)
+    if over:
+        return int(over), None
+    return int(low), int(high)
+
+
+def _amount_in_quote(amount: Optional[int], quote: str) -> Optional[int]:
+    """模型给出的金额必须能在用户原话里找到（如“6000”或“1万”），否则不采用。"""
+    if amount is None:
+        return None
+    digits = re.sub(r"(?<=\d)[,，](?=\d{3})", "", quote)
+    if re.search(rf"(?<!\d){amount}(?!\d)", digits):
+        return amount
+    if amount % 10000 == 0 and re.search(rf"(?<!\d){amount // 10000}万", digits):
+        return amount
+    return None
+
+
+def _budget_bounds(item: "ExtractedRequirement") -> Tuple[Optional[int], Optional[int]]:
+    if item.topic != BUDGET_TOPIC:
+        return None, None
+    if isinstance(item.source, _OptionRef):
+        bounds = _option_budget(item.source.option_id) if item.source.question_id == BUDGET_TOPIC else None
+        low, high = bounds or (None, None)
+    else:
+        low = _amount_in_quote(item.budget_min_yuan, item.source.quote)
+        high = _amount_in_quote(item.budget_max_yuan, item.source.quote)
+    return (low * 100 if low is not None else None), (high * 100 if high is not None else None)
 
 
 def _source_is_real(source: Union[_OptionRef, _TextRef], selected: Set[Tuple[str, str]], free_text: str) -> bool:
@@ -118,12 +164,15 @@ async def normalize_needs(
             source = OptionSource(kind="option", question_id=item.source.question_id, option_id=item.source.option_id)
         else:
             source = FreeTextSource(kind="free_text", quote=item.source.quote.strip())
+        budget_min, budget_max = _budget_bounds(item)
         requirements.append(Requirement(
             requirement_id=requirement_id,
             topic=item.topic,
             statement=item.statement,
             strictness=item.strictness,
             source=source,
+            budget_min_minor=budget_min,
+            budget_max_minor=budget_max,
         ))
 
     conflicts: List[Conflict] = []

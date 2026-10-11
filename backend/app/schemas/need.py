@@ -36,6 +36,9 @@ class Requirement(StrictModel):
     statement: NonEmptyStr
     strictness: Literal["hard", "soft", "unknown"] = "unknown"
     source: RequirementSource
+    # 预算类需求的金额范围（人民币，分）；没有明确金额时为空，不推测。
+    budget_min_minor: Optional[int] = Field(default=None, ge=0)
+    budget_max_minor: Optional[int] = Field(default=None, ge=0)
 
 
 class Conflict(StrictModel):

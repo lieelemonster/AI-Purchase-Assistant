@@ -51,6 +51,21 @@ def load_runtime_config(path: Path = RUNTIME_FILE) -> RuntimeConfig:
         raise ConfigError(f"{path.name} 配置有误：\n{e}") from e
 
 
+ENV_FILE = Path(__file__).resolve().parents[2] / ".env"
+
+
+def load_project_env(path: Path = ENV_FILE) -> None:
+    """读取 backend/.env。已经存在的环境变量优先，方便临时换密钥或超时做检查。"""
+    if not path.exists():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        text = line.strip()
+        if not text or text.startswith("#") or "=" not in text:
+            continue
+        key, value = text.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip())
+
+
 def load_secrets(env: Mapping[str, str] = os.environ) -> Secrets:
     return Secrets(
         model_api_key=env.get("MODEL_API_KEY") or None,

@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Callable, Dict, Tuple
 
+from app.core.usage import add_cache_hit
 from app.core.verification.evidence_set import PageReaderLike
 from app.schemas.evidence import EvidenceDocument
 
@@ -30,6 +31,7 @@ class CachedPageReader:
         cached = self._pages.get(url)
         if cached and now - cached[0] < self._ttl:
             self.hits += 1
+            add_cache_hit()
             return cached[1].model_copy(update={"evidence_id": evidence_id})
         self.misses += 1
         doc = await self._reader.read(url, evidence_id)

@@ -7,6 +7,7 @@ import httpx
 from bs4 import BeautifulSoup
 
 from app.adapters.pages.url_safety import Resolver, UnsafeUrlError, check_url, system_resolve
+from app.core.usage import add_page_read
 from app.schemas.evidence import EvidenceDocument
 
 HTML_TYPES = {"text/html", "application/xhtml+xml"}
@@ -49,6 +50,7 @@ class PageReader:
         except FetchError as e:
             return EvidenceDocument(evidence_id=evidence_id, url=url, fetched_at=fetched_at,
                                     fetch_status="unavailable", failure_reason=e.reason)
+        add_page_read()
         title, text, links = extract_page(body, charset, base_url=final_url)
         return EvidenceDocument(
             evidence_id=evidence_id,

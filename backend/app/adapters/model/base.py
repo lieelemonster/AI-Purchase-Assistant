@@ -4,6 +4,8 @@ from typing import Any, Dict, Literal, Type, TypeVar
 
 from pydantic import BaseModel, ValidationError
 
+from app.core.usage import add_model_call
+
 ModelErrorKind = Literal["timeout", "auth", "quota", "network", "invalid_output", "unknown"]
 
 T = TypeVar("T", bound=BaseModel)
@@ -20,6 +22,7 @@ class ModelGateway(ABC):
 
     async def generate_json(self, *, task: str, payload: Dict[str, Any], output_schema: Type[T]) -> T:
         raw = await self._complete(task=task, payload=payload, output_schema=output_schema.model_json_schema())
+        add_model_call()
         return parse_model_output(raw, output_schema)
 
     @abstractmethod

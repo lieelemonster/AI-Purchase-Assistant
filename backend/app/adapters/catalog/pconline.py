@@ -6,6 +6,7 @@ from bs4 import BeautifulSoup
 from pydantic import BaseModel
 
 from app.adapters.pages.reader import FetchedPage, FetchError
+from app.core.usage import add_search
 
 SEARCH_URL = "https://ks.pconline.com.cn/product.shtml?q="
 SEARCH_HOST = "ks.pconline.com.cn"
@@ -106,4 +107,5 @@ class PconlineCatalog:
             raise CatalogSearchError(e.reason) from e
         if urlsplit(page.final_url).hostname != SEARCH_HOST:
             raise CatalogSearchError("redirected_off_site")
+        add_search()
         return parse_search_results(page.body, page.charset)

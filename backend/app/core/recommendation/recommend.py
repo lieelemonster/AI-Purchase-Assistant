@@ -1,5 +1,6 @@
 import asyncio
 import itertools
+import time
 from datetime import datetime, timezone
 from typing import Dict, List
 
@@ -23,6 +24,7 @@ from app.core.verification.catalog_policies import dedupe_same_model, discover_c
 from app.core.verification.conflicts import mark_field_conflicts
 from app.core.verification.evidence_set import PageReaderLike
 from app.core.verification.price_parsing import parse_reference_price
+from app.core.usage import current_usage, format_usage, start_usage
 from app.core.verification.spec_parsing import parse_spec_page
 from app.schemas.candidate import Candidate
 from app.schemas.evidence import EvidenceDocument, PriceFact, VerifiedFact
@@ -52,17 +54,29 @@ async def _recommend(
     reader: PageReaderLike,
     config: RuntimeConfig,
 ) -> RecommendationResult:
+    usage = current_usage()
+    started = time.perf_counter()
+
+    def mark(name: str) -> None:
+        nonlocal started
+        if usage is not None:
+            usage.stages_ms[name] = int((time.perf_counter() - started) * 1000)
+        started = time.perf_counter()
+
     need = await normalize_needs(request.category_id, request.option_answers, request.free_text, model)
+    mark("需求")
     follow_up = await plan_follow_up(need, request.follow_up_round, model)
     if follow_up is not None:
         return _empty(request.request_id, "need_more_info", follow_up=follow_up)
 
     proposed = await propose_candidates(need, model, config.max_candidates)
+    mark("候选")
     matches = await match_with_retry(proposed, need, model, catalog, SearchBudget(config.max_search_calls))
     matches = dedupe_same_model(matches)
     extra_candidates, extra_matches = discover_candidates(proposed, matches)
     candidates = proposed + extra_candidates
     matches = matches + extra_matches
+    mark("检索")
     by_id = {candidate.candidate_id: candidate for candidate in candidates}
 
     evidence = await collect_catalog_evidence(
@@ -71,6 +85,7 @@ async def _recommend(
         max_pages=config.max_pages,
         concurrency=config.concurrency,
     )
+    mark("读取")
     table = load_field_table(request.category_id)
     fact_ids = itertools.count(1)
     facts: Dict[str, List[VerifiedFact]] = {}
@@ -119,6 +134,7 @@ async def _recommend(
         model,
         max_attempts=config.max_retries + 1,
     )
+    mark("排序")
     names = [candidate.model_hint for candidate in usable]
     filled = {
         candidate.candidate_id: fill_reasons(
@@ -152,6 +168,7 @@ async def recommend(
     reader: PageReaderLike,
     config: RuntimeConfig,
 ) -> RecommendationResult:
+    usage = start_usage()
     try:
         return await asyncio.wait_for(
             _recommend(request, model=model, catalog=catalog, reader=reader, config=config),
@@ -163,3 +180,5 @@ async def recommend(
         return _empty(request.request_id, "service_unavailable")
     except (RankingError, ReasonFillError):
         return _empty(request.request_id, "failed")
+    finally:
+        print(format_usage(usage))

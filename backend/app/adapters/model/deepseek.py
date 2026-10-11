@@ -5,6 +5,7 @@ import openai
 from openai import AsyncOpenAI
 
 from app.adapters.model.base import ModelGateway, ModelGatewayError
+from app.core.usage import add_model_tokens
 
 DEFAULT_MODEL = "deepseek-flash"
 BASE_URL = "https://api.deepseek.com"
@@ -50,6 +51,11 @@ class DeepSeekGateway(ModelGateway):
             )
         except Exception as exc:
             raise classify_model_error(exc) from exc
+        usage = getattr(response, "usage", None)
+        tokens = 0
+        if usage is not None:
+            tokens = int(getattr(usage, "total_tokens", 0) or 0)
+        add_model_tokens(tokens)
         content = response.choices[0].message.content if response.choices else None
         if not content:
             raise ModelGatewayError("invalid_output", "模型没有返回内容")

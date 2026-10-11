@@ -1,0 +1,215 @@
+{
+  "source": "outputs/中国电商官方渠道汇总.md（只收录“已验证”的品牌官网、官方商城、京东旗舰店、天猫旗舰店；不收录渠道说明页）",
+  "channel_priority": {"official": 1, "jd": 2, "tmall": 3},
+  "brands": [
+    {"id": "lenovo", "names": ["Lenovo", "联想", "ThinkPad", "ThinkBook", "Legion", "拯救者", "YOGA", "小新", "ThinkVision"], "channels": [
+      {"type": "official", "domain": "lenovo.com.cn"},
+      {"type": "jd", "shop_id": "12894711"},
+      {"type": "tmall", "store_host": "lenovo.tmall.com"}
+    ]},
+    {"id": "apple", "names": ["Apple", "苹果"], "channels": [
+      {"type": "official", "domain": "apple.com.cn"},
+      {"type": "official", "domain": "store.apple.com", "path_prefix": "/cn/"},
+      {"type": "tmall", "store_host": "apple.tmall.com"}
+    ]},
+    {"id": "huawei", "names": ["Huawei", "华为"], "channels": [
+      {"type": "official", "domain": "consumer.huawei.com", "path_prefix": "/cn/"},
+      {"type": "official", "domain": "consumer.huawei.cn", "path_prefix": "/cn/"},
+      {"type": "official", "domain": "vmall.com"},
+      {"type": "jd", "store_host": "huawei.jd.com"},
+      {"type": "tmall", "store_host": "huaweistore.tmall.com"}
+    ]},
+    {"id": "dell", "names": ["Dell", "戴尔", "Alienware", "外星人"], "channels": [
+      {"type": "official", "domain": "dell.com", "path_prefix": "/zh-cn/"},
+      {"type": "jd", "store_host": "dell.jd.com"},
+      {"type": "jd", "store_host": "dellpc.jd.com"},
+      {"type": "tmall", "store_host": "dell.tmall.com"}
+    ]},
+    {"id": "hp", "names": ["HP", "惠普"], "channels": [
+      {"type": "official", "domain": "hp.com", "path_prefix": "/cn-zh/"},
+      {"type": "official", "domain": "hpstore.cn"},
+      {"type": "tmall", "store_host": "hp.tmall.com"}
+    ]},
+    {"id": "asus", "names": ["ASUS", "华硕", "ROG", "玩家国度"], "channels": [
+      {"type": "official", "domain": "asus.com.cn"},
+      {"type": "tmall", "store_host": "asus.tmall.com"}
+    ]},
+    {"id": "acer", "names": ["Acer", "宏碁"], "channels": [
+      {"type": "official", "domain": "acer.com.cn"}
+    ]},
+    {"id": "honor", "names": ["Honor", "荣耀"], "channels": [
+      {"type": "official", "domain": "honor.com", "path_prefix": "/cn/"},
+      {"type": "jd", "store_host": "honor.jd.com"},
+      {"type": "tmall", "store_host": "hihonor.tmall.com"}
+    ]},
+    {"id": "hasee", "names": ["HASEE", "神舟"], "channels": [
+      {"type": "official", "domain": "hasee.com"},
+      {"type": "jd", "store_host": "hasee.jd.com"}
+    ]},
+    {"id": "mechrevo", "names": ["MECHREVO", "机械革命"], "channels": [
+      {"type": "official", "domain": "mechrevo.com", "path_prefix": "/cn/"},
+      {"type": "jd", "store_host": "mechrevo.jd.com"},
+      {"type": "tmall", "store_host": "mechrevo.tmall.com"}
+    ]},
+    {"id": "thunderobot", "names": ["ThundeRobot", "雷神"], "channels": [
+      {"type": "official", "domain": "thunderobot.com"},
+      {"type": "jd", "store_host": "thunderobot.jd.com"},
+      {"type": "tmall", "store_host": "thunderobot.tmall.com"}
+    ]},
+    {"id": "machenike", "names": ["MACHENIKE", "机械师"], "channels": [
+      {"type": "official", "domain": "machenike.com"},
+      {"type": "jd", "store_host": "machenike.jd.com"}
+    ]},
+    {"id": "colorful", "names": ["Colorful", "七彩虹"], "channels": [
+      {"type": "official", "domain": "colorful.cn"}
+    ]},
+    {"id": "gigabyte", "names": ["GIGABYTE", "技嘉"], "channels": [
+      {"type": "official", "domain": "gigabyte.cn"},
+      {"type": "tmall", "store_host": "gigabytesm.tmall.com"}
+    ]},
+    {"id": "vaio", "names": ["VAIO"], "channels": [
+      {"type": "official", "domain": "vaio-china.com"}
+    ]},
+    {"id": "microsoft", "names": ["Microsoft", "微软", "Surface"], "channels": [
+      {"type": "official", "domain": "microsoftstore.com.cn"}
+    ]},
+    {"id": "xiaomi", "names": ["Xiaomi", "小米", "Redmi", "红米"], "channels": [
+      {"type": "official", "domain": "mi.com", "exclude_path_prefixes": ["/global/"]},
+      {"type": "jd", "store_host": "mi.jd.com"},
+      {"type": "tmall", "store_host": "xiaomi.tmall.com"}
+    ]},
+    {"id": "oppo", "names": ["OPPO"], "channels": [
+      {"type": "official", "domain": "oppo.com", "path_prefix": "/cn/"},
+      {"type": "official", "domain": "opposhop.cn"},
+      {"type": "jd", "store_host": "oppo.jd.com"},
+      {"type": "tmall", "store_host": "oppo.tmall.com"}
+    ]},
+    {"id": "vivo", "names": ["vivo"], "channels": [
+      {"type": "official", "domain": "vivo.com.cn"},
+      {"type": "jd", "store_host": "vivo.jd.com"}
+    ]},
+    {"id": "samsung", "names": ["Samsung", "三星"], "channels": [
+      {"type": "official", "domain": "samsung.com.cn"},
+      {"type": "jd", "store_host": "samsung.jd.com"},
+      {"type": "tmall", "store_host": "samsung.tmall.com"}
+    ]},
+    {"id": "oneplus", "names": ["OnePlus", "一加"], "channels": [
+      {"type": "official", "domain": "oneplus.com", "path_prefix": "/cn/"},
+      {"type": "tmall", "store_host": "oneplus.tmall.com"}
+    ]},
+    {"id": "iqoo", "names": ["iQOO"], "channels": [
+      {"type": "official", "domain": "iqoo.com", "path_prefix": "/cn/"},
+      {"type": "official", "domain": "vivo.com.cn"}
+    ]},
+    {"id": "realme", "names": ["realme", "真我"], "channels": [
+      {"type": "official", "domain": "realme.com", "path_prefix": "/cn/"},
+      {"type": "official", "domain": "buy.realme.com", "path_prefix": "/cn/"},
+      {"type": "jd", "store_host": "realme.jd.com"}
+    ]},
+    {"id": "nubia", "names": ["nubia", "努比亚", "REDMAGIC", "红魔"], "channels": [
+      {"type": "official", "domain": "nubia.com"},
+      {"type": "official", "domain": "redmagic.com"},
+      {"type": "tmall", "store_host": "nubia.tmall.com"}
+    ]},
+    {"id": "meizu", "names": ["MEIZU", "魅族"], "channels": [
+      {"type": "official", "domain": "meizu.com"}
+    ]},
+    {"id": "motorola", "names": ["Motorola", "摩托罗拉", "moto"], "channels": [
+      {"type": "official", "domain": "mitem.lenovovip.com.cn"},
+      {"type": "jd", "store_host": "moto.jd.com"}
+    ]},
+    {"id": "zte", "names": ["ZTE", "中兴"], "channels": [
+      {"type": "official", "domain": "ztedevices.com", "path_prefix": "/cn/"},
+      {"type": "official", "domain": "zte.com.cn"},
+      {"type": "official", "domain": "ztemall.com"},
+      {"type": "jd", "store_host": "zte.jd.com"}
+    ]},
+    {"id": "teclast", "names": ["Teclast", "台电"], "channels": [
+      {"type": "official", "domain": "teclast.com"}
+    ]},
+    {"id": "cube", "names": ["CUBE", "酷比魔方"], "channels": [
+      {"type": "official", "domain": "51cube.com"}
+    ]},
+    {"id": "lg", "names": ["LG"], "channels": [
+      {"type": "official", "domain": "lg.com", "path_prefix": "/cn/"},
+      {"type": "official", "domain": "shop.lg.com.cn"},
+      {"type": "tmall", "store_host": "lg.tmall.com"}
+    ]},
+    {"id": "aoc", "names": ["AOC", "冠捷"], "channels": [
+      {"type": "official", "domain": "aocmonitor.com.cn"},
+      {"type": "official", "domain": "aocdisplay.com.cn"}
+    ]},
+    {"id": "viewsonic", "names": ["ViewSonic", "优派"], "channels": [
+      {"type": "official", "domain": "viewsonic.com.cn"},
+      {"type": "jd", "shop_id": "13352596"},
+      {"type": "tmall", "store_host": "viewsonic.tmall.com"}
+    ]},
+    {"id": "hkc", "names": ["HKC", "惠科"], "channels": [
+      {"type": "official", "domain": "hkcglobal.net"},
+      {"type": "jd", "shop_id": "12641730"},
+      {"type": "tmall", "store_host": "hkc.tmall.com"}
+    ]},
+    {"id": "titanarmy", "names": ["TitanArmy", "泰坦军团"], "channels": [
+      {"type": "official", "domain": "titanarmy.cn"},
+      {"type": "tmall", "store_host": "titanarmy.tmall.com"}
+    ]},
+    {"id": "ktc", "names": ["KTC", "康冠"], "channels": [
+      {"type": "official", "domain": "ktc.cn"}
+    ]},
+    {"id": "antgamer", "names": ["ANTGAMER", "蚂蚁电竞"], "channels": [
+      {"type": "official", "domain": "antgamer.net"}
+    ]},
+    {"id": "sony", "names": ["Sony", "索尼"], "channels": [
+      {"type": "official", "domain": "sonystyle.com.cn"},
+      {"type": "jd", "shop_id": "10075831"},
+      {"type": "tmall", "store_host": "sony.tmall.com"}
+    ]},
+    {"id": "bose", "names": ["Bose", "博士"], "channels": [
+      {"type": "official", "domain": "bose.cn"},
+      {"type": "jd", "store_host": "bose.jd.com"}
+    ]},
+    {"id": "edifier", "names": ["EDIFIER", "漫步者"], "channels": [
+      {"type": "official", "domain": "edifier.com"},
+      {"type": "official", "domain": "edifierstore.com"},
+      {"type": "jd", "shop_id": "17100276"},
+      {"type": "tmall", "store_host": "edifier.tmall.com"}
+    ]},
+    {"id": "jbl", "names": ["JBL"], "channels": [
+      {"type": "official", "domain": "cn.jbl.com"},
+      {"type": "jd", "shop_id": "708539"},
+      {"type": "tmall", "store_host": "jbl.tmall.com"}
+    ]},
+    {"id": "1more", "names": ["1MORE", "万魔"], "channels": [
+      {"type": "official", "domain": "1more.com"}
+    ]},
+    {"id": "shokz", "names": ["SHOKZ", "韶音"], "channels": [
+      {"type": "official", "domain": "shokz.com.cn"}
+    ]},
+    {"id": "soundcore", "names": ["Soundcore", "声阔"], "channels": [
+      {"type": "official", "domain": "cn.soundcore.com"},
+      {"type": "tmall", "store_host": "soundcore.tmall.com"}
+    ]},
+    {"id": "beats", "names": ["Beats"], "channels": [
+      {"type": "official", "domain": "beatsbydre.com.cn"}
+    ]},
+    {"id": "sennheiser", "names": ["Sennheiser", "森海塞尔"], "channels": [
+      {"type": "official", "domain": "sennheiser.com.cn"},
+      {"type": "tmall", "store_host": "sennheiser.tmall.com"}
+    ]},
+    {"id": "audio_technica", "names": ["Audio-Technica", "铁三角"], "channels": [
+      {"type": "official", "domain": "audio-technica.com.cn"},
+      {"type": "tmall", "store_host": "audiotechnica.tmall.com"}
+    ]},
+    {"id": "beyerdynamic", "names": ["beyerdynamic", "拜雅"], "channels": [
+      {"type": "official", "domain": "beyerdynamic.com"}
+    ]},
+    {"id": "akg", "names": ["AKG", "爱科技"], "channels": [
+      {"type": "official", "domain": "akg.com"}
+    ]},
+    {"id": "logitech", "names": ["Logitech", "罗技"], "channels": [
+      {"type": "official", "domain": "logitech.com"},
+      {"type": "official", "domain": "store.logitech.com.cn"},
+      {"type": "tmall", "store_host": "logitech.tmall.com"}
+    ]}
+  ]
+}

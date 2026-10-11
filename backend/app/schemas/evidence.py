@@ -33,6 +33,7 @@ class EvidenceDocument(StrictModel):
     failure_reason: Optional[str] = None
     content_hash: Optional[str] = None
     text: str = ""
+    links: List[str] = []
 
     @model_validator(mode="after")
     def check_fetch_result(self):

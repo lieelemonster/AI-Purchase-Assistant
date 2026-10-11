@@ -47,6 +47,15 @@ def test_reads_title_text_hash_and_keeps_table_rows():
     assert "color:red" not in doc.text
 
 
+def test_links_are_absolute_and_deduplicated():
+    page = b"""<html><body>
+      <a href="//huawei.jd.com/">shop</a><a href="/item/2.html">rel</a><a href="/item/2.html">dup</a>
+      <a href="#top">anchor</a><a href="javascript:void(0)">js</a>
+    </body></html>"""
+    doc = read(lambda request: html(page))
+    assert doc.links == ["https://huawei.jd.com/", "https://shop.example/item/2.html"]
+
+
 def test_follows_safe_redirect_and_records_final_url():
     def handler(request):
         if request.url.host == "shop.example":

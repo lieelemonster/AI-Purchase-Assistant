@@ -1,6 +1,6 @@
 import hashlib
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple
 from urllib.parse import urljoin
 
 import httpx
@@ -11,6 +11,7 @@ from app.schemas.evidence import EvidenceDocument
 
 HTML_TYPES = {"text/html", "application/xhtml+xml"}
 USER_AGENT = "AIBuyAssistant/0.1 (+official product page reader)"
+MAX_LINKS = 500
 
 
 class _FetchFailed(Exception):
@@ -42,7 +43,7 @@ class PageReader:
         except _FetchFailed as e:
             return EvidenceDocument(evidence_id=evidence_id, url=url, fetched_at=fetched_at,
                                     fetch_status="unavailable", failure_reason=e.reason)
-        title, text = extract_title_and_text(body, charset)
+        title, text, links = extract_page(body, charset, base_url=final_url)
         return EvidenceDocument(
             evidence_id=evidence_id,
             url=url,
@@ -52,6 +53,7 @@ class PageReader:
             fetch_status="ok",
             content_hash=hashlib.sha256(body).hexdigest(),
             text=text,
+            links=links,
         )
 
     async def _fetch(self, url: str) -> Tuple[str, bytes, Optional[str]]:
@@ -101,13 +103,16 @@ class PageReader:
         return bytes(body)
 
 
-def extract_title_and_text(body: bytes, charset: Optional[str] = None) -> Tuple[Optional[str], str]:
+def extract_page(body: bytes, charset: Optional[str] = None, base_url: str = "") -> Tuple[Optional[str], str, List[str]]:
+    """返回标题、正文和页面中的链接（已转为绝对地址，去重，最多 MAX_LINKS 条）。"""
     soup = BeautifulSoup(body, "html.parser", from_encoding=charset)
     title = soup.title.get_text(strip=True) if soup.title else None
+    hrefs = (a.get("href", "").strip() for a in soup.find_all("a"))
+    links = list(dict.fromkeys(urljoin(base_url, h) for h in hrefs if h and not h.startswith(("#", "javascript:"))))
     for tag in soup(["script", "style", "noscript", "template"]):
         tag.decompose()
     for row in soup.find_all("tr"):
         cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
         row.replace_with(soup.new_string(" | ".join(c for c in cells if c)))
     lines = (" ".join(line.split()) for line in soup.get_text("\n").splitlines())
-    return title or None, "\n".join(line for line in lines if line)
+    return title or None, "\n".join(line for line in lines if line), links[:MAX_LINKS]

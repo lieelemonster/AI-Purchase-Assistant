@@ -6,6 +6,8 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt, model_validator
 FactStatus = Literal["supported", "unknown", "conflicting", "unavailable"]
 
 PriceBasis = Literal[
+    "pconline_reference",
+    "pconline_reference_starting",
     "list_price",
     "starting_price",
     "installment",

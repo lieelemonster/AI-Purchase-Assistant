@@ -7,5 +7,6 @@
   "request_timeout_s": 120,
   "max_retries": 1,
   "concurrency": 4,
+  "source_min_interval_s": 2,
   "model_max_output_tokens": 4000
 }

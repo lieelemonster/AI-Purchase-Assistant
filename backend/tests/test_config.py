@@ -15,6 +15,7 @@ PARAMS = [
     "request_timeout_s",
     "max_retries",
     "concurrency",
+    "source_min_interval_s",
     "model_max_output_tokens",
 ]
 
@@ -29,7 +30,7 @@ def default_data():
     return json.loads(RUNTIME_FILE.read_text(encoding="utf-8"))
 
 
-def test_default_runtime_file_has_all_nine_params():
+def test_default_runtime_file_has_all_params():
     assert sorted(default_data()) == sorted(PARAMS)
     load_runtime_config()
 

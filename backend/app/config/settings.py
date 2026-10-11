@@ -3,7 +3,16 @@ import os
 from pathlib import Path
 from typing import Mapping, Optional
 
-from pydantic import BaseModel, ConfigDict, PositiveFloat, PositiveInt, NonNegativeInt, SecretStr, ValidationError
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    NonNegativeFloat,
+    NonNegativeInt,
+    PositiveFloat,
+    PositiveInt,
+    SecretStr,
+    ValidationError,
+)
 
 RUNTIME_FILE = Path(__file__).parent / "runtime.json"
 
@@ -23,6 +32,7 @@ class RuntimeConfig(BaseModel):
     request_timeout_s: PositiveFloat
     max_retries: NonNegativeInt
     concurrency: PositiveInt
+    source_min_interval_s: NonNegativeFloat
     model_max_output_tokens: PositiveInt
 
 

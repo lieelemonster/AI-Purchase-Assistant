@@ -29,6 +29,7 @@ class CatalogMatch(BaseModel):
     reason: Optional[str] = None
     keyword: str = ""
     hit: Optional[CatalogHit] = None
+    alternatives: List[CatalogHit] = []
 
 
 class _Keyword(BaseModel):
@@ -67,14 +68,21 @@ async def match_candidates(
     model: ModelGateway,
     catalog: CatalogLike,
     budget: SearchBudget,
+    keyword_overrides: Optional[Dict[str, str]] = None,
 ) -> List[CatalogMatch]:
-    """关键词和“哪条结果对应候选”交给模型；程序只把未停产、品类一致的结果交给模型选，并核对所选编号。"""
-    written = await model.generate_json(
-        task=KEYWORD_TASK,
-        payload={"category_id": need.category_id, "candidates": [c.model_dump() for c in candidates]},
-        output_schema=_Keywords,
-    )
-    keywords = {k.candidate_id: k.keyword.strip() for k in written.keywords}
+    """关键词和“哪条结果对应候选”交给模型；程序只把未停产、品类一致的结果交给模型选，并核对所选编号。
+
+    传入 keyword_overrides 时（如补查）直接使用这些关键词，不再请模型写。
+    """
+    if keyword_overrides is None:
+        written = await model.generate_json(
+            task=KEYWORD_TASK,
+            payload={"category_id": need.category_id, "candidates": [c.model_dump() for c in candidates]},
+            output_schema=_Keywords,
+        )
+        keywords = {k.candidate_id: k.keyword.strip() for k in written.keywords}
+    else:
+        keywords = keyword_overrides
     allowed_dirs = set(CATEGORY_DIRS[need.category_id])
 
     matches: Dict[str, CatalogMatch] = {}
@@ -124,5 +132,6 @@ async def match_candidates(
                 match.status, match.hit = "matched", hits[product_id]
             else:
                 match.reason = excluded.get(cid, {}).get(product_id, "choice_not_in_results")
+            match.alternatives = [h for pid, h in hits.items() if pid != product_id]
 
     return [matches[c.candidate_id] for c in candidates]

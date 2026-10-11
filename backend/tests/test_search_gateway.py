@@ -14,7 +14,8 @@ def test_fake_returns_scripted_hits_and_records_the_call():
     gateway = FakeSearchGateway({"轻薄本 A 官网": [HIT]})
     hits = asyncio.run(gateway.search("轻薄本 A 官网", region="示例地区", language="zh", limit=5))
     assert hits == [HIT]
-    assert gateway.calls == [{"query": "轻薄本 A 官网", "region": "示例地区", "language": "zh", "limit": 5}]
+    assert gateway.calls == [{"query": "轻薄本 A 官网", "region": "示例地区", "language": "zh", "limit": 5,
+                              "include_sites": None}]
 
 
 def test_unscripted_query_returns_no_hits():

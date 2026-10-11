@@ -162,6 +162,21 @@ def check_channel(url: str, brand_hint: str) -> ChannelCheck:
     return ChannelCheck(status="unknown")
 
 
+def search_sites(brand: OfficialBrand, channel: ChannelType) -> List[str]:
+    """该品牌某类渠道可用于限定搜索范围的站点；电商渠道包含商品详情页所在的站点。"""
+    channels = [c for c in brand.channels if c.type == channel]
+    if not channels:
+        return []
+    if channel == "official":
+        sites = [c.domain for c in channels]
+    else:
+        sites = [c.store_host for c in channels if c.store_host]
+        if any(c.shop_id for c in channels):
+            sites.append("mall.jd.com")
+        sites += sorted(JD_ITEM_HOSTS if channel == "jd" else TMALL_ITEM_HOSTS)
+    return list(dict.fromkeys(sites))
+
+
 def links_confirm_store(links: Iterable[str], check: ChannelCheck) -> bool:
     """商品详情页中是否有链接指向该品牌的官方店铺。"""
     for link in links:

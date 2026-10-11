@@ -31,5 +31,6 @@ class SearchGateway(ABC):
         region: Optional[str] = None,
         language: Optional[str] = None,
         limit: int = 10,
+        include_sites: Optional[List[str]] = None,
     ) -> List[SearchHit]:
-        """失败时抛出 SearchGatewayError。"""
+        """include_sites 为希望限定的站点；供应商不支持时可以忽略，调用方会再按官方渠道规则过滤。失败时抛出 SearchGatewayError。"""

@@ -1,0 +1,11 @@
+{
+  "max_candidates": 6,
+  "max_search_calls": 12,
+  "max_pages": 12,
+  "max_page_bytes": 2000000,
+  "call_timeout_s": 20,
+  "request_timeout_s": 120,
+  "max_retries": 1,
+  "concurrency": 4,
+  "model_max_output_tokens": 4000
+}

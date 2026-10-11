@@ -1,0 +1,57 @@
+{
+  "category_id": "phone",
+  "version": "v1",
+  "questions": [
+    {
+      "id": "usage",
+      "label": "你主要用它来做什么？",
+      "multiple": true,
+      "options": [
+        {"id": "daily", "label": "日常聊天、刷视频、上网"},
+        {"id": "camera", "label": "拍照、拍视频"},
+        {"id": "gaming", "label": "玩游戏"},
+        {"id": "business", "label": "工作商务（频繁通话、多开应用）"},
+        {"id": "elder", "label": "给长辈用"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "priorities",
+      "label": "你更看重哪些方面？",
+      "multiple": true,
+      "options": [
+        {"id": "camera", "label": "拍照效果"},
+        {"id": "battery", "label": "续航"},
+        {"id": "performance", "label": "性能流畅"},
+        {"id": "compact", "label": "小巧轻便"},
+        {"id": "big_screen", "label": "大屏"},
+        {"id": "signal", "label": "信号和通话质量"},
+        {"id": "long_updates", "label": "系统更新支持久"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "os",
+      "label": "你对系统有偏好吗？",
+      "multiple": false,
+      "options": [
+        {"id": "ios", "label": "iOS（iPhone）"},
+        {"id": "android", "label": "安卓"},
+        {"id": "either", "label": "都可以"},
+        {"id": "unfamiliar", "label": "不了解区别"}
+      ]
+    },
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "multiple": false,
+      "options": [
+        {"id": "under_2000", "label": "2000 元以下"},
+        {"id": "2000_4000", "label": "2000–4000 元"},
+        {"id": "4000_6000", "label": "4000–6000 元"},
+        {"id": "over_6000", "label": "6000 元以上"},
+        {"id": "not_sure", "label": "还没想好"}
+      ]
+    }
+  ]
+}

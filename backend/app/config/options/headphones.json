@@ -1,0 +1,70 @@
+{
+  "category_id": "headphones",
+  "version": "v1",
+  "questions": [
+    {
+      "id": "scenarios",
+      "label": "你主要在什么场景下使用？",
+      "multiple": true,
+      "options": [
+        {"id": "commute", "label": "通勤路上（地铁、公交）"},
+        {"id": "sports", "label": "运动健身"},
+        {"id": "calls", "label": "办公通话、开会"},
+        {"id": "home_media", "label": "在家听音乐、看视频"},
+        {"id": "gaming", "label": "打游戏"},
+        {"id": "sleep", "label": "睡觉时戴"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "form",
+      "label": "想要哪种佩戴方式？",
+      "multiple": false,
+      "options": [
+        {"id": "true_wireless", "label": "入耳式真无线"},
+        {"id": "over_ear", "label": "头戴式"},
+        {"id": "open_ear", "label": "开放式（不塞进耳朵）"},
+        {"id": "wired", "label": "有线"},
+        {"id": "unfamiliar", "label": "不了解区别"}
+      ]
+    },
+    {
+      "id": "priorities",
+      "label": "你更看重哪些方面？",
+      "multiple": true,
+      "options": [
+        {"id": "anc", "label": "降噪"},
+        {"id": "sound", "label": "音质"},
+        {"id": "comfort", "label": "佩戴舒适"},
+        {"id": "battery", "label": "续航"},
+        {"id": "mic", "label": "通话清晰"},
+        {"id": "waterproof", "label": "防水防汗"},
+        {"id": "low_latency", "label": "低延迟"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "devices",
+      "label": "主要连接什么设备？",
+      "multiple": false,
+      "options": [
+        {"id": "iphone", "label": "iPhone"},
+        {"id": "android", "label": "安卓手机"},
+        {"id": "computer", "label": "电脑为主"},
+        {"id": "multi", "label": "多个设备来回切换"}
+      ]
+    },
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "multiple": false,
+      "options": [
+        {"id": "under_300", "label": "300 元以下"},
+        {"id": "300_1000", "label": "300–1000 元"},
+        {"id": "1000_2000", "label": "1000–2000 元"},
+        {"id": "over_2000", "label": "2000 元以上"},
+        {"id": "not_sure", "label": "还没想好"}
+      ]
+    }
+  ]
+}

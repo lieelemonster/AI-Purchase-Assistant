@@ -1,0 +1,67 @@
+{
+  "category_id": "monitor",
+  "version": "v1",
+  "questions": [
+    {
+      "id": "usage",
+      "label": "你主要用它来做什么？",
+      "multiple": true,
+      "options": [
+        {"id": "office", "label": "办公、写文档"},
+        {"id": "programming", "label": "编程、看代码"},
+        {"id": "design", "label": "修图、做设计（要求色彩准确）"},
+        {"id": "video_editing", "label": "剪视频"},
+        {"id": "gaming", "label": "玩游戏（要求画面流畅）"},
+        {"id": "movies", "label": "看影视"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "connected_devices",
+      "label": "要连接哪些设备？",
+      "multiple": true,
+      "options": [
+        {"id": "windows_pc", "label": "Windows 笔记本或台式机"},
+        {"id": "mac", "label": "Mac"},
+        {"id": "console", "label": "游戏主机（如 PS5、Switch）"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "size",
+      "label": "尺寸大概想要多大？",
+      "multiple": false,
+      "options": [
+        {"id": "around_24", "label": "24 英寸左右"},
+        {"id": "around_27", "label": "27 英寸左右"},
+        {"id": "32_plus", "label": "32 英寸及以上"},
+        {"id": "ultrawide", "label": "超宽带鱼屏（34 英寸左右）"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "features",
+      "label": "需要以下功能吗？",
+      "multiple": true,
+      "options": [
+        {"id": "usb_c_power", "label": "一根 Type-C 线连接笔记本并充电"},
+        {"id": "adjustable_stand", "label": "支架可升降、旋转"},
+        {"id": "speakers", "label": "内置音箱"},
+        {"id": "none", "label": "都不需要"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "multiple": false,
+      "options": [
+        {"id": "under_1000", "label": "1000 元以下"},
+        {"id": "1000_2000", "label": "1000–2000 元"},
+        {"id": "2000_4000", "label": "2000–4000 元"},
+        {"id": "over_4000", "label": "4000 元以上"},
+        {"id": "not_sure", "label": "还没想好"}
+      ]
+    }
+  ]
+}

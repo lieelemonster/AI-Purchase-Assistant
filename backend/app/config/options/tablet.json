@@ -1,0 +1,64 @@
+{
+  "category_id": "tablet",
+  "version": "v1",
+  "questions": [
+    {
+      "id": "usage",
+      "label": "你主要用它来做什么？",
+      "multiple": true,
+      "options": [
+        {"id": "entertainment", "label": "看视频、刷剧、看书"},
+        {"id": "notes", "label": "学习、手写记笔记"},
+        {"id": "office", "label": "配键盘办公"},
+        {"id": "drawing", "label": "画画、做设计"},
+        {"id": "kids", "label": "给孩子用"},
+        {"id": "gaming", "label": "玩游戏"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "accessories",
+      "label": "需要搭配手写笔或键盘吗？",
+      "multiple": true,
+      "options": [
+        {"id": "stylus", "label": "需要手写笔"},
+        {"id": "keyboard", "label": "需要键盘"},
+        {"id": "none", "label": "都不需要"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "devices",
+      "label": "你现在主要用哪类手机或电脑？（影响设备之间的互联体验）",
+      "multiple": false,
+      "options": [
+        {"id": "apple", "label": "苹果设备"},
+        {"id": "android_windows", "label": "安卓手机或 Windows 电脑"},
+        {"id": "mixed", "label": "两类都有"},
+        {"id": "not_important", "label": "不在意互联"}
+      ]
+    },
+    {
+      "id": "screen_size",
+      "label": "屏幕大概想要多大？",
+      "multiple": false,
+      "options": [
+        {"id": "around_11", "label": "11 英寸左右（便携）"},
+        {"id": "12_13", "label": "12–13 英寸（大屏）"},
+        {"id": "either", "label": "都可以"}
+      ]
+    },
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "multiple": false,
+      "options": [
+        {"id": "under_2000", "label": "2000 元以下"},
+        {"id": "2000_4000", "label": "2000–4000 元"},
+        {"id": "4000_7000", "label": "4000–7000 元"},
+        {"id": "over_7000", "label": "7000 元以上"},
+        {"id": "not_sure", "label": "还没想好"}
+      ]
+    }
+  ]
+}

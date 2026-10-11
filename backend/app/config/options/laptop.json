@@ -1,0 +1,77 @@
+{
+  "category_id": "laptop",
+  "version": "v1",
+  "questions": [
+    {
+      "id": "usage",
+      "label": "你主要用它来做什么？",
+      "multiple": true,
+      "options": [
+        {"id": "office", "label": "写文档、做表格、上网课、浏览网页"},
+        {"id": "programming", "label": "编程开发"},
+        {"id": "creative", "label": "剪视频、修图、做设计"},
+        {"id": "gaming", "label": "玩大型游戏"},
+        {"id": "data_ai", "label": "数据分析或在本机跑 AI 模型"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "portability",
+      "label": "你会经常带着它出门吗？",
+      "multiple": false,
+      "options": [
+        {"id": "often", "label": "经常带（通勤、出差、上课）"},
+        {"id": "sometimes", "label": "偶尔带"},
+        {"id": "desk", "label": "基本放在桌上"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "priorities",
+      "label": "你更看重哪些方面？",
+      "multiple": true,
+      "options": [
+        {"id": "battery", "label": "续航长，一天不用插电"},
+        {"id": "light", "label": "轻薄"},
+        {"id": "screen", "label": "屏幕显示效果好"},
+        {"id": "performance", "label": "性能强"},
+        {"id": "quiet", "label": "安静，风扇声小"},
+        {"id": "ports", "label": "接口多，少用转接头"},
+        {"id": "not_sure", "label": "还不确定"}
+      ]
+    },
+    {
+      "id": "os",
+      "label": "你对系统有偏好吗？",
+      "multiple": false,
+      "options": [
+        {"id": "macos", "label": "macOS（苹果）"},
+        {"id": "windows", "label": "Windows"},
+        {"id": "either", "label": "都可以"},
+        {"id": "unfamiliar", "label": "不了解区别"}
+      ]
+    },
+    {
+      "id": "screen_size",
+      "label": "屏幕大概想要多大？",
+      "multiple": false,
+      "options": [
+        {"id": "13_14", "label": "13–14 英寸（更轻便）"},
+        {"id": "15_16", "label": "15–16 英寸（看得更舒服）"},
+        {"id": "either", "label": "都可以"}
+      ]
+    },
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "multiple": false,
+      "options": [
+        {"id": "under_5000", "label": "5000 元以下"},
+        {"id": "5000_8000", "label": "5000–8000 元"},
+        {"id": "8000_12000", "label": "8000–12000 元"},
+        {"id": "over_12000", "label": "12000 元以上"},
+        {"id": "not_sure", "label": "还没想好"}
+      ]
+    }
+  ]
+}

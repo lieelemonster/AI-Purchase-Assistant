@@ -56,6 +56,7 @@ class EvidenceSource(StrictModel):
     url: str
     title: Optional[str] = None
     fetched_at: datetime
+    source_name: Optional[str] = None
 
 
 class UnresolvedItem(StrictModel):

@@ -1,0 +1,113 @@
+{
+  "request_id": "req-sample-001",
+  "status": "success",
+  "primary": {
+    "candidate_id": "c1",
+    "name": "示例品牌 轻薄本 A 14 英寸 16GB/512GB",
+    "facts": [
+      {
+        "fact_id": "f1",
+        "candidate_id": "c1",
+        "field": "memory",
+        "value": "16",
+        "unit": "GB",
+        "evidence_id": "e1",
+        "excerpt": "16GB 内存",
+        "status": "supported"
+      },
+      {
+        "fact_id": "f2",
+        "candidate_id": "c1",
+        "field": "weight",
+        "value": "1.2",
+        "unit": "kg",
+        "evidence_id": "e1",
+        "excerpt": "重量约 1.2 kg",
+        "status": "supported"
+      }
+    ],
+    "price": {
+      "candidate_id": "c1",
+      "amount_minor": 949900,
+      "minor_unit_digits": 2,
+      "currency": "CNY",
+      "region": "示例地区",
+      "variant_identity": "14 英寸 16GB/512GB",
+      "price_basis": "list_price",
+      "conditions": [],
+      "evidence_id": "e2",
+      "excerpt": "¥9,499",
+      "status": "supported"
+    },
+    "reasons": [
+      {
+        "need_refs": ["r1"],
+        "fact_refs": ["f2"],
+        "conclusion_type": "fact",
+        "text": "官方资料显示重量为 {{fact:f2}}。",
+        "limitations": []
+      },
+      {
+        "need_refs": ["r1"],
+        "fact_refs": ["f2"],
+        "conclusion_type": "judgment",
+        "text": "较轻的机身更适合你经常带出门的需求。",
+        "limitations": ["续航官方数据未查到"]
+      }
+    ]
+  },
+  "alternatives": [
+    {
+      "candidate_id": "c2",
+      "name": "示例品牌 轻薄本 B 13 英寸 16GB/512GB",
+      "facts": [],
+      "price": {
+        "candidate_id": "c2",
+        "amount_minor": 899900,
+        "minor_unit_digits": 2,
+        "currency": "CNY",
+        "region": "示例地区",
+        "variant_identity": "13 英寸 16GB/512GB",
+        "price_basis": "list_price",
+        "conditions": [],
+        "evidence_id": "e3",
+        "excerpt": "¥8,999",
+        "status": "supported"
+      },
+      "reasons": []
+    },
+    {
+      "candidate_id": "c3",
+      "name": "示例品牌 轻薄本 C 14 英寸",
+      "facts": [],
+      "price": {
+        "candidate_id": "c3",
+        "amount_minor": null,
+        "minor_unit_digits": null,
+        "currency": null,
+        "region": null,
+        "variant_identity": null,
+        "price_basis": "unknown",
+        "conditions": [],
+        "evidence_id": null,
+        "excerpt": null,
+        "status": "unknown"
+      },
+      "reasons": []
+    }
+  ],
+  "comparison": [
+    {"candidate_id": "c1", "comparable": true, "difference_minor_vs_primary": 0, "not_comparable_reason": null},
+    {"candidate_id": "c2", "comparable": true, "difference_minor_vs_primary": -50000, "not_comparable_reason": null},
+    {"candidate_id": "c3", "comparable": false, "difference_minor_vs_primary": null, "not_comparable_reason": "官方价格未查到"}
+  ],
+  "evidence_sources": [
+    {"evidence_id": "e1", "url": "https://example.com/laptop-a/specs", "title": "轻薄本 A 技术规格", "fetched_at": "2026-10-11T12:00:00Z"},
+    {"evidence_id": "e2", "url": "https://example.com/laptop-a/buy", "title": "轻薄本 A 价格", "fetched_at": "2026-10-11T12:00:01Z"},
+    {"evidence_id": "e3", "url": "https://example.com/laptop-b/buy", "title": "轻薄本 B 价格", "fetched_at": "2026-10-11T12:00:02Z"}
+  ],
+  "unresolved_items": [
+    {"candidate_id": "c3", "field": "price", "status": "unknown", "description": "未找到该配置的官方价格"}
+  ],
+  "checked_at": "2026-10-11T12:00:05Z"
+}

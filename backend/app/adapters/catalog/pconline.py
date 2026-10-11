@@ -13,6 +13,14 @@ PRODUCT_HOST = "product.pconline.com.cn"
 # 站内搜索按 GBK 解释中文关键词；UTF-8 编码的中文会搜出无关结果（2026-10-11 实测）。
 KEYWORD_ENCODING = "gbk"
 PRODUCT_PATH = re.compile(r"^/([a-z_]+)/([a-z0-9_]+)/(\d+)\.html$")
+# 本产品品类 → 太平洋产品库的品类目录（2026-10-11 按五个品类的真实页面整理，任务 24 实测后可补充）。
+CATEGORY_DIRS = {
+    "laptop": ["notebook"],
+    "phone": ["mobile"],
+    "tablet": ["tabletpc"],
+    "monitor": ["lcd"],
+    "headphones": ["earphone"],
+}
 
 
 class CatalogSearchError(Exception):

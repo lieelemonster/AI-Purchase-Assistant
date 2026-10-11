@@ -4,6 +4,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.adapters.model.base import ModelGateway
 from app.adapters.search.base import SearchGateway, SearchGatewayError
+from app.core.verification.budget import SearchBudget
 from app.core.verification.official_sources import (
     ChannelCheck,
     ChannelType,
@@ -26,20 +27,6 @@ QUERY_TASK = (
 MAX_QUERY_LENGTH = 100
 SEARCH_LANGUAGE = "zh"
 HITS_PER_SEARCH = 10
-
-
-class SearchBudget:
-    """一次推荐请求内共享的搜索次数上限。"""
-
-    def __init__(self, max_calls: int):
-        self.max_calls = max_calls
-        self.used = 0
-
-    def take(self) -> bool:
-        if self.used >= self.max_calls:
-            return False
-        self.used += 1
-        return True
 
 
 class SourceHit(BaseModel):

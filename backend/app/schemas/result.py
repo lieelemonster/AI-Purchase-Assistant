@@ -4,11 +4,13 @@ from typing import Annotated, List, Literal, Optional
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from app.schemas.evidence import FactStatus, PriceFact, VerifiedFact
+from app.schemas.follow_up import FollowUpRequest
 
 FactRef = Annotated[str, Field(pattern=r"^(f\d+|price:c\d+)$")]
 
 ResultStatus = Literal[
     "success",
+    "need_more_info",
     "insufficient_candidates",
     "timeout",
     "service_unavailable",
@@ -71,10 +73,13 @@ class RecommendationResult(StrictModel):
     comparison: List[ComparisonEntry] = []
     evidence_sources: List[EvidenceSource] = []
     unresolved_items: List[UnresolvedItem] = []
+    follow_up: Optional[FollowUpRequest] = None
     checked_at: datetime
 
     @model_validator(mode="after")
-    def success_has_one_primary_and_two_alternatives(self):
+    def check_status_specific_fields(self):
         if self.status == "success" and (self.primary is None or len(self.alternatives) != 2):
             raise ValueError("正常成功的结果必须是首选 1 款＋备选 2 款")
+        if self.status == "need_more_info" and self.follow_up is None:
+            raise ValueError("need_more_info 结果必须带追问")
         return self

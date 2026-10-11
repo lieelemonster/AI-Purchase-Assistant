@@ -1,0 +1,11 @@
+{
+  "max_follow_up_rounds": 1,
+  "uncertain_option_ids": ["not_sure"],
+  "required_questions": {
+    "laptop": ["usage", "budget"],
+    "phone": ["usage", "budget"],
+    "tablet": ["usage", "budget"],
+    "monitor": ["usage", "connected_devices", "budget"],
+    "headphones": ["scenarios", "budget"]
+  }
+}

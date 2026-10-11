@@ -1,0 +1,27 @@
+{
+  "category_id": "laptop",
+  "version": "v1",
+  "fields": [
+    {"id": "release_date", "name": "上市时间", "pconline_labels": ["上市时间"]},
+    {"id": "os", "name": "操作系统", "pconline_labels": ["操作系统"]},
+    {"id": "cpu", "name": "处理器", "pconline_labels": ["处理器"]},
+    {"id": "memory", "name": "内存容量", "pconline_labels": ["内存容量"]},
+    {"id": "storage", "name": "硬盘容量", "pconline_labels": ["硬盘容量"]},
+    {"id": "screen_size", "name": "屏幕尺寸", "pconline_labels": ["屏幕尺寸"]},
+    {"id": "resolution", "name": "屏幕分辨率", "pconline_labels": ["屏幕分辨率"]},
+    {"id": "refresh_rate", "name": "屏幕刷新率", "pconline_labels": ["屏幕刷新率"]},
+    {"id": "screen_type", "name": "屏幕类型", "pconline_labels": ["屏幕类型"]},
+    {"id": "brightness", "name": "屏幕亮度", "pconline_labels": ["屏幕亮度"]},
+    {"id": "gpu_type", "name": "显卡类型", "pconline_labels": ["显卡类型"]},
+    {"id": "gpu", "name": "显卡芯片", "pconline_labels": ["显卡芯片"]},
+    {"id": "battery", "name": "电池容量", "pconline_labels": ["电池容量"]},
+    {"id": "battery_life", "name": "续航时间", "pconline_labels": ["续航时间"]},
+    {"id": "weight", "name": "重量", "pconline_labels": ["重量"]},
+    {"id": "thickness", "name": "厚度", "pconline_labels": ["厚度"]},
+    {"id": "usb", "name": "USB 接口", "pconline_labels": ["USB"]},
+    {"id": "other_ports", "name": "其它接口", "pconline_labels": ["其它接口"]},
+    {"id": "wifi", "name": "无线网卡", "pconline_labels": ["无线网卡"]},
+    {"id": "camera", "name": "摄像头", "pconline_labels": ["摄像头"]},
+    {"id": "biometrics", "name": "生物识别", "pconline_labels": ["生物识别功能"]}
+  ]
+}

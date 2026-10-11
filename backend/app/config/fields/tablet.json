@@ -1,0 +1,24 @@
+{
+  "category_id": "tablet",
+  "version": "v1",
+  "fields": [
+    {"id": "release_date", "name": "发布时间", "pconline_labels": ["发布时间"]},
+    {"id": "os", "name": "操作系统", "pconline_labels": ["操作系统"]},
+    {"id": "cpu", "name": "处理器", "pconline_labels": ["CPU"]},
+    {"id": "memory", "name": "运行内存", "pconline_labels": ["运行内存"]},
+    {"id": "storage", "name": "存储容量", "pconline_labels": ["存储容量"]},
+    {"id": "screen_size", "name": "屏幕尺寸", "pconline_labels": ["屏幕尺寸"]},
+    {"id": "resolution", "name": "分辨率", "pconline_labels": ["分辨率"]},
+    {"id": "refresh_rate", "name": "屏幕刷新率", "pconline_labels": ["屏幕刷新率"]},
+    {"id": "brightness", "name": "屏幕亮度", "pconline_labels": ["屏幕亮度"]},
+    {"id": "screen_material", "name": "屏幕材质", "pconline_labels": ["屏幕材质"]},
+    {"id": "features", "name": "特性（如是否支持手写笔）", "pconline_labels": ["特性"]},
+    {"id": "wifi", "name": "WiFi", "pconline_labels": ["WiFi功能"]},
+    {"id": "battery", "name": "电池容量", "pconline_labels": ["电池容量"]},
+    {"id": "battery_life", "name": "续航时间", "pconline_labels": ["续航时间"]},
+    {"id": "ports", "name": "接口", "pconline_labels": ["接口"]},
+    {"id": "speakers", "name": "扬声器", "pconline_labels": ["扬声器"]},
+    {"id": "dimensions", "name": "尺寸", "pconline_labels": ["尺寸"]},
+    {"id": "weight", "name": "重量", "pconline_labels": ["重量"]}
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "category_id": "headphones",
+  "version": "v1",
+  "fields": [
+    {"id": "form", "name": "佩戴方式（产品分类）", "pconline_labels": ["产品分类"]},
+    {"id": "usage", "name": "主要用途", "pconline_labels": ["主要用途"]},
+    {"id": "anc", "name": "降噪功能", "pconline_labels": ["降噪功能"]},
+    {"id": "driver", "name": "驱动单元", "pconline_labels": ["驱动单元/直径"]},
+    {"id": "battery_life", "name": "电池续航", "pconline_labels": ["电池续航"]},
+    {"id": "fast_charge", "name": "快速充电", "pconline_labels": ["快速充电"]},
+    {"id": "mic", "name": "麦克风", "pconline_labels": ["麦克风描述"]},
+    {"id": "material", "name": "外观材质", "pconline_labels": ["外观材质"]},
+    {"id": "other", "name": "其它功能", "pconline_labels": ["其它性能"]}
+  ]
+}

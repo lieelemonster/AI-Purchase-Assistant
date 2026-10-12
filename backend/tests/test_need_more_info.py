@@ -55,6 +55,12 @@ def test_not_sure_counts_as_unknown():
     assert find_missing(need) == ["budget"]
 
 
+def test_typed_budget_cap_counts_as_budget():
+    need = profile(answers=[answer("usage", "office"), answer("budget", "not_sure")], )
+    need = need.model_copy(update={"free_text": "预算上限：6000元"})
+    assert find_missing(need) == []
+
+
 def test_requirement_from_free_text_counts_as_known():
     need = profile(answers=[answer("budget", "under_5000")], requirements=[text_requirement("usage", "主要写文档")])
     assert find_missing(need) == []
@@ -64,11 +70,6 @@ def test_topic_listed_as_unknown_is_missing_even_with_a_requirement():
     need = profile(answers=[answer("usage", "office")], requirements=[text_requirement("budget", "预算还没想好")],
                    unknowns=["budget"])
     assert find_missing(need) == ["budget"]
-
-
-def test_monitor_also_requires_connected_devices():
-    need = profile("monitor", answers=[answer("usage", "office"), answer("budget", "1000_2000")])
-    assert find_missing(need) == ["connected_devices"]
 
 
 def test_after_one_round_still_missing_info_proceeds_as_unknown():

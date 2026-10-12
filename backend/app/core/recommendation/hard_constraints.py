@@ -11,7 +11,6 @@ _BUDGET_SLACK_YUAN = {
     "laptop": 500,
     "phone": 500,
     "tablet": 500,
-    "monitor": 150,
     "headphones": 150,
 }
 
@@ -68,7 +67,7 @@ def _budgets(need: NeedProfile) -> List[_Budget]:
 def check_hard_constraints(need: NeedProfile, prices: Dict[str, PriceFact]) -> Dict[str, ConstraintCheck]:
     """预算按硬性标准排除超范围的已知价格。
 
-    笔记本、手机、平板的上下限各允许超出 500 元；显示器和耳机各允许超出 150 元。
+    笔记本、手机、平板的上下限各允许超出 500 元；耳机允许超出 150 元。
     价格未知时不排除也不算满足；起售价落在放宽后的范围内时，提醒具体配置可能更贵。
     """
     budgets = _budgets(need)

@@ -6,6 +6,7 @@ from typing import Mapping, Optional
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     NonNegativeFloat,
     NonNegativeInt,
     PositiveFloat,
@@ -36,6 +37,7 @@ class RuntimeConfig(BaseModel):
     model_max_output_tokens: PositiveInt
     rate_limit_per_minute: PositiveInt
     max_concurrent_requests: PositiveInt
+    catalog_db_path: str = Field(min_length=1)
 
 
 class Secrets(BaseModel):

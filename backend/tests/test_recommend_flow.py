@@ -1,20 +1,14 @@
 import asyncio
 import json
+import sqlite3
 import time
-from datetime import datetime, timezone
 
-from app.adapters.catalog.pconline import CatalogHit
-from app.adapters.model.base import ModelGateway, ModelGatewayError
+from app.adapters.model.base import ModelGatewayError
 from app.adapters.model.fake import FakeModelGateway
+from app.catalog.library import SPEC_COLUMNS
 from app.config.settings import load_runtime_config
 from app.core.recommendation.recommend import RecommendRequest, recommend
-from app.schemas.evidence import EvidenceDocument
 from app.schemas.need import OptionAnswer
-
-NOW = datetime(2026, 10, 11, tzinfo=timezone.utc)
-SPEC = "上市时间 | 2024年\n处理器 | 示例芯片\n内存容量 | 16GB\n"
-NAMES = {"101": "示例本A", "102": "示例本B", "103": "示例本C"}
-PRICES = {"101": "5999", "102": "6999", "103": "7999"}
 
 
 def request():
@@ -29,117 +23,158 @@ def request():
     )
 
 
-def config(**updates):
-    return load_runtime_config().model_copy(update=updates)
-
-
-class Pages:
-    async def read(self, url, evidence_id):
-        product_id = url.rstrip("/").split("/")[-1].split("_")[0].split(".")[0]
-        name = NAMES[product_id]
-        if "_price" in url:
-            text = f"参考价：￥{PRICES[product_id]}（行货价格）"
-            title = name + "价格"
-        else:
-            text, title = SPEC, name + "参数"
-        return EvidenceDocument(evidence_id=evidence_id, url=url, final_url=url, title=title, fetched_at=NOW,
-                                fetch_status="ok", content_hash="h", text=text)
-
-
-class Catalog:
-    def __init__(self, delay=0):
-        self.delay = delay
-
-    async def search(self, keyword):
-        if self.delay:
-            await asyncio.sleep(self.delay)
-        return [
-            CatalogHit(product_id=pid, name=name, category_dir="notebook", brand_dir="demo", discontinued=False,
-                       url=f"https://product.pconline.com.cn/notebook/demo/{pid}.html")
-            for pid, name in NAMES.items()
-        ]
-
-
-class ScriptThenRank(ModelGateway):
-    def __init__(self, replies):
-        self.replies = list(replies)
-
-    async def _complete(self, *, task, payload, output_schema):
-        if self.replies:
-            reply = self.replies.pop(0)
-            if isinstance(reply, Exception):
-                raise reply
-            return reply
-        ranking = [item["candidate_id"] for item in payload["candidates"][:3]]
-        reasons = {}
-        for item in payload["candidates"][:3]:
-            fact_id = item["facts"][0]["fact_id"]
-            reasons[item["candidate_id"]] = [{
-                "need_refs": ["r1"],
-                "fact_refs": [fact_id],
-                "conclusion_type": "fact",
-                "text": "{{name:%s}}适合写文档{{fact:%s}}" % (item["candidate_id"], fact_id),
-            }]
-        return json.dumps({"ranking": ranking, "reasons": reasons}, ensure_ascii=False)
-
-
-def scripted():
-    return [
-        json.dumps({"requirements": [{
-            "topic": "usage", "statement": "写文档",
-            "source": {"kind": "option", "question_id": "usage", "option_id": "office"},
-        }]}, ensure_ascii=False),
-        json.dumps({"candidates": [
-            {"brand_hint": "示例", "model_hint": "示例本A"},
-            {"brand_hint": "示例", "model_hint": "示例本B"},
-            {"brand_hint": "示例", "model_hint": "示例本C"},
-        ]}, ensure_ascii=False),
-        json.dumps({"keywords": [
-            {"candidate_id": "c1", "keyword": "示例本A"},
-            {"candidate_id": "c2", "keyword": "示例本B"},
-            {"candidate_id": "c3", "keyword": "示例本C"},
-        ]}, ensure_ascii=False),
-        json.dumps({"choices": [
-            {"candidate_id": "c1", "product_id": "101"},
-            {"candidate_id": "c2", "product_id": "102"},
-            {"candidate_id": "c3", "product_id": "103"},
-        ]}, ensure_ascii=False),
+def make_db(path):
+    columns = ["id", "brand", "model", "reference_price", "source_url", *SPEC_COLUMNS["laptops"]]
+    db = sqlite3.connect(path)
+    db.execute(f"CREATE TABLE laptops ({', '.join(name + ' TEXT' for name in columns)})")
+    rows = [
+        ("1", "示例", "示例本A", "5999", "https://example.test/a", "16GB"),
+        ("2", "示例", "示例本B", "6999", "https://example.test/b", "16GB"),
+        ("3", "示例", "示例本C", "7999", "https://example.test/c", "32GB"),
+        ("4", "示例", "超预算", "9000", "https://example.test/d", "16GB"),
+        ("5", "示例", "价格未确认", "未确认", "", "16GB"),
     ]
+    memory_index = columns.index("memory")
+    for row in rows:
+        values = [""] * len(columns)
+        values[0], values[1], values[2], values[3], values[4] = row[:5]
+        values[memory_index] = row[5]
+        db.execute(f"INSERT INTO laptops VALUES ({', '.join('?' for _ in columns)})", values)
+    db.commit()
+    db.close()
 
 
-def test_fake_services_return_one_primary_and_two_alternatives():
+def config(path, **updates):
+    return load_runtime_config().model_copy(update={"catalog_db_path": str(path), **updates})
+
+
+def normalize_reply():
+    return json.dumps({"requirements": [{
+        "topic": "usage", "statement": "写文档",
+        "source": {"kind": "option", "question_id": "usage", "option_id": "office"},
+    }]}, ensure_ascii=False)
+
+
+def selection_reply():
+    return json.dumps({
+        "primary": {"product_id": "laptops:1", "reason": "适合写文档"},
+        "alternatives": [
+            {"product_id": "laptops:2", "reason": "适合写文档"},
+            {"product_id": "laptops:5", "reason": "适合写文档，参考价未确认"},
+        ],
+        "notes": "备选里有一款价格未确认",
+    }, ensure_ascii=False)
+
+
+def test_catalog_selection_fills_name_and_price_from_the_library(tmp_path):
+    db_path = tmp_path / "products.db"
+    make_db(db_path)
     result = asyncio.run(recommend(
         request(),
-        model=ScriptThenRank(scripted()),
-        catalog=Catalog(),
-        reader=Pages(),
-        config=config(source_min_interval_s=0, request_timeout_s=30),
+        model=FakeModelGateway([normalize_reply(), selection_reply()]),
+        catalog=None,
+        reader=None,
+        config=config(db_path),
     ))
     assert result.status == "success"
-    assert result.primary.candidate_id == "c1"
-    assert [item.candidate_id for item in result.alternatives] == ["c2", "c3"]
+    assert result.primary.name == "示例 示例本A"
     assert result.primary.price.amount_minor == 599900
+    assert [item.name for item in result.alternatives] == ["示例 示例本B", "示例 示例本C"]
+    assert "内存至少 16GB" in result.primary.reasons[0].text
+    assert all("超预算" not in item.name for item in [result.primary, *result.alternatives])
+    memory = next(fact.value for fact in result.primary.facts if fact.field == "memory")
+    assert memory == "16GB"
 
 
-def test_search_timeout_finishes_within_the_limit():
+def test_newest_release_among_the_three_is_primary(tmp_path):
+    db_path = tmp_path / "products.db"
+    make_db(db_path)
+    db = sqlite3.connect(db_path)
+    db.execute("UPDATE laptops SET release_date = '2024-01' WHERE id = '1'")
+    db.execute("UPDATE laptops SET release_date = '2026-03' WHERE id = '2'")
+    db.execute("UPDATE laptops SET release_date = '2025-05' WHERE id = '5'")
+    db.commit()
+    db.close()
+    result = asyncio.run(recommend(
+        request(),
+        model=FakeModelGateway([normalize_reply(), selection_reply()]),
+        catalog=None,
+        reader=None,
+        config=config(db_path),
+    ))
+    assert result.primary.name == "示例 示例本B"
+    assert [item.name for item in result.alternatives] == ["示例 价格未确认", "示例 示例本A"]
+
+
+def test_invalid_product_id_falls_back_to_price_order(tmp_path):
+    db_path = tmp_path / "products.db"
+    make_db(db_path)
+    invented = json.dumps({
+        "primary": {"product_id": "laptops:999", "reason": "适合写文档"},
+        "alternatives": [],
+    }, ensure_ascii=False)
+    result = asyncio.run(recommend(
+        request(),
+        model=FakeModelGateway([normalize_reply(), invented, invented]),
+        catalog=None,
+        reader=None,
+        config=config(db_path, max_retries=1),
+    ))
+    assert result.primary.name == "示例 示例本A"
+    assert [item.name for item in result.alternatives] == ["示例 示例本B", "示例 示例本C"]
+    assert "999" not in result.primary.name
+
+
+def test_clarification_is_replaced_by_a_catalog_recommendation(tmp_path):
+    db_path = tmp_path / "products.db"
+    make_db(db_path)
+    asked = json.dumps({
+        "need_clarification": True,
+        "questions": ["更看重续航还是重量？"],
+        "primary": {"product_id": "laptops:1", "reason": "适合写文档"},
+    }, ensure_ascii=False)
+    result = asyncio.run(recommend(
+        request(),
+        model=FakeModelGateway([normalize_reply(), asked, asked]),
+        catalog=None,
+        reader=None,
+        config=config(db_path),
+    ))
+    assert result.follow_up is None
+    assert result.primary is not None
+    assert result.primary.name == "示例 示例本A"
+    assert "模型" not in result.primary.reasons[0].text
+
+
+def test_request_timeout_finishes_within_the_limit(tmp_path):
+    db_path = tmp_path / "products.db"
+    make_db(db_path)
+
+    class Slow(FakeModelGateway):
+        async def _complete(self, *, task, payload, output_schema):
+            await asyncio.sleep(30)
+            return await super()._complete(task=task, payload=payload, output_schema=output_schema)
+
     started = time.monotonic()
     result = asyncio.run(recommend(
         request(),
-        model=FakeModelGateway(scripted()[:3]),
-        catalog=Catalog(delay=30),
-        reader=Pages(),
-        config=config(source_min_interval_s=0, request_timeout_s=3),
+        model=Slow([normalize_reply()]),
+        catalog=None,
+        reader=None,
+        config=config(db_path, request_timeout_s=1),
     ))
     assert result.status == "timeout"
-    assert time.monotonic() - started < 4
+    assert time.monotonic() - started < 3
 
 
-def test_quota_error_is_not_reported_as_success():
+def test_quota_error_is_not_reported_as_success(tmp_path):
+    db_path = tmp_path / "products.db"
+    make_db(db_path)
     result = asyncio.run(recommend(
         request(),
         model=FakeModelGateway([ModelGatewayError("quota")]),
-        catalog=Catalog(),
-        reader=Pages(),
-        config=config(source_min_interval_s=0),
+        catalog=None,
+        reader=None,
+        config=config(db_path),
     ))
     assert result.status == "service_unavailable"

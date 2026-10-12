@@ -1,11 +1,25 @@
 {
   "category_id": "headphones",
-  "version": "v1",
+  "version": "v2",
   "questions": [
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "note": "指耳机官方参考价。",
+      "multiple": false,
+      "required": true,
+      "options": [
+        {"id": "under_300", "label": "300 元以下"},
+        {"id": "300_1000", "label": "300–1000 元"},
+        {"id": "1000_2000", "label": "1000–2000 元"},
+        {"id": "over_2000", "label": "2000 元以上"}
+      ]
+    },
     {
       "id": "scenarios",
       "label": "你主要在什么场景下使用？",
       "multiple": true,
+      "required": true,
       "options": [
         {"id": "commute", "label": "通勤路上（地铁、公交）"},
         {"id": "sports", "label": "运动健身"},
@@ -25,7 +39,18 @@
         {"id": "over_ear", "label": "头戴式"},
         {"id": "open_ear", "label": "开放式（不塞进耳朵）"},
         {"id": "wired", "label": "有线"},
-        {"id": "unfamiliar", "label": "不了解区别"}
+        {"id": "unfamiliar", "label": "不了解区别／怕入耳异物感"}
+      ]
+    },
+    {
+      "id": "devices",
+      "label": "主要连接什么设备？",
+      "multiple": false,
+      "options": [
+        {"id": "iphone", "label": "iPhone"},
+        {"id": "android", "label": "安卓手机"},
+        {"id": "computer", "label": "电脑为主"},
+        {"id": "multi", "label": "多个设备来回切换"}
       ]
     },
     {
@@ -44,27 +69,9 @@
       ]
     },
     {
-      "id": "devices",
-      "label": "主要连接什么设备？",
-      "multiple": false,
-      "options": [
-        {"id": "iphone", "label": "iPhone"},
-        {"id": "android", "label": "安卓手机"},
-        {"id": "computer", "label": "电脑为主"},
-        {"id": "multi", "label": "多个设备来回切换"}
-      ]
-    },
-    {
-      "id": "budget",
-      "label": "预算大概多少？",
-      "multiple": false,
-      "options": [
-        {"id": "under_300", "label": "300 元以下"},
-        {"id": "300_1000", "label": "300–1000 元"},
-        {"id": "1000_2000", "label": "1000–2000 元"},
-        {"id": "over_2000", "label": "2000 元以上"},
-        {"id": "not_sure", "label": "还没想好"}
-      ]
+      "id": "constraints",
+      "label": "还有什么必须满足或绝对不要的？",
+      "kind": "text"
     }
   ]
 }

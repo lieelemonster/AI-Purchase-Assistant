@@ -5,7 +5,6 @@
     "laptop": ["usage", "budget"],
     "phone": ["usage", "budget"],
     "tablet": ["usage", "budget"],
-    "monitor": ["usage", "connected_devices", "budget"],
     "headphones": ["scenarios", "budget"]
   }
 }

@@ -25,8 +25,6 @@ FIVE = [
     ("手机-拍照", "phone", [OptionAnswer(question_id="usage", option_ids=["camera"]), OptionAnswer(question_id="budget", option_ids=["4000_6000"])], "主要拍照", 0),
     ("平板-看视频", "tablet", [OptionAnswer(question_id="usage", option_ids=["entertainment"]), OptionAnswer(question_id="budget", option_ids=["2000_4000"])], "看视频", 0),
     ("平板-记笔记", "tablet", [OptionAnswer(question_id="usage", option_ids=["notes"]), OptionAnswer(question_id="budget", option_ids=["4000_7000"])], "手写记笔记", 0),
-    ("显示器-办公", "monitor", [OptionAnswer(question_id="usage", option_ids=["office"]), OptionAnswer(question_id="connected_devices", option_ids=["windows_pc"]), OptionAnswer(question_id="budget", option_ids=["1000_2000"])], "办公", 0),
-    ("显示器-设计", "monitor", [OptionAnswer(question_id="usage", option_ids=["design"]), OptionAnswer(question_id="connected_devices", option_ids=["mac"]), OptionAnswer(question_id="budget", option_ids=["2000_4000"])], "修图", 0),
     ("耳机-通勤", "headphones", [OptionAnswer(question_id="scenarios", option_ids=["commute"]), OptionAnswer(question_id="budget", option_ids=["300_1000"])], "通勤降噪", 0),
     ("耳机-通话", "headphones", [OptionAnswer(question_id="scenarios", option_ids=["calls"]), OptionAnswer(question_id="budget", option_ids=["300_1000"])], "开会通话", 0),
 ]

@@ -19,7 +19,6 @@ CATEGORY_DIRS = {
     "laptop": ["notebook"],
     "phone": ["mobile"],
     "tablet": ["tabletpc"],
-    "monitor": ["lcd"],
     "headphones": ["earphone"],
 }
 

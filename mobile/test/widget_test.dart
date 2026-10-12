@@ -12,7 +12,6 @@ class _Fake implements BuyApi {
         CategoryInfo(id: 'laptop', name: '笔记本电脑'),
         CategoryInfo(id: 'phone', name: '手机'),
         CategoryInfo(id: 'tablet', name: '平板电脑'),
-        CategoryInfo(id: 'monitor', name: '显示器'),
         CategoryInfo(id: 'headphones', name: '耳机'),
       ];
   @override

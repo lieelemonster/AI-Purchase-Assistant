@@ -130,35 +130,6 @@
     {"id": "cube", "names": ["CUBE", "酷比魔方"], "channels": [
       {"type": "official", "domain": "51cube.com"}
     ]},
-    {"id": "lg", "names": ["LG"], "channels": [
-      {"type": "official", "domain": "lg.com", "path_prefix": "/cn/"},
-      {"type": "official", "domain": "shop.lg.com.cn"},
-      {"type": "tmall", "store_host": "lg.tmall.com"}
-    ]},
-    {"id": "aoc", "names": ["AOC", "冠捷"], "channels": [
-      {"type": "official", "domain": "aocmonitor.com.cn"},
-      {"type": "official", "domain": "aocdisplay.com.cn"}
-    ]},
-    {"id": "viewsonic", "names": ["ViewSonic", "优派"], "channels": [
-      {"type": "official", "domain": "viewsonic.com.cn"},
-      {"type": "jd", "shop_id": "13352596"},
-      {"type": "tmall", "store_host": "viewsonic.tmall.com"}
-    ]},
-    {"id": "hkc", "names": ["HKC", "惠科"], "channels": [
-      {"type": "official", "domain": "hkcglobal.net"},
-      {"type": "jd", "shop_id": "12641730"},
-      {"type": "tmall", "store_host": "hkc.tmall.com"}
-    ]},
-    {"id": "titanarmy", "names": ["TitanArmy", "泰坦军团"], "channels": [
-      {"type": "official", "domain": "titanarmy.cn"},
-      {"type": "tmall", "store_host": "titanarmy.tmall.com"}
-    ]},
-    {"id": "ktc", "names": ["KTC", "康冠"], "channels": [
-      {"type": "official", "domain": "ktc.cn"}
-    ]},
-    {"id": "antgamer", "names": ["ANTGAMER", "蚂蚁电竞"], "channels": [
-      {"type": "official", "domain": "antgamer.net"}
-    ]},
     {"id": "sony", "names": ["Sony", "索尼"], "channels": [
       {"type": "official", "domain": "sonystyle.com.cn"},
       {"type": "jd", "shop_id": "10075831"},

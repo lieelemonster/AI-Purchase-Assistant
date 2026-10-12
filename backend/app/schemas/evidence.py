@@ -14,6 +14,7 @@ PriceBasis = Literal[
     "trade_in",
     "education",
     "promotion",
+    "catalog_reference",
     "unknown",
 ]
 

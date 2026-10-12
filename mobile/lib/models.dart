@@ -20,19 +20,65 @@ class OptionChoice {
   }
 }
 
+class ShowClause {
+  ShowClause({required this.questionId, required this.optionIds});
+  final String questionId;
+  final List<String> optionIds;
+
+  factory ShowClause.fromJson(Map<String, dynamic> json) {
+    return ShowClause(
+      questionId: json['question_id'] as String,
+      optionIds: (json['option_ids'] as List).map((item) => item as String).toList(),
+    );
+  }
+}
+
+class ShowWhen {
+  ShowWhen({required this.allOf, required this.anyOf});
+  final List<ShowClause> allOf;
+  final List<ShowClause> anyOf;
+
+  factory ShowWhen.fromJson(Map<String, dynamic> json) {
+    List<ShowClause> read(String key) {
+      return ((json[key] as List?) ?? []).map((item) => ShowClause.fromJson(item as Map<String, dynamic>)).toList();
+    }
+
+    return ShowWhen(allOf: read('all_of'), anyOf: read('any_of'));
+  }
+}
+
 class SurveyQuestion {
-  SurveyQuestion({required this.id, required this.label, required this.multiple, required this.options});
+  SurveyQuestion({
+    required this.id,
+    required this.label,
+    required this.multiple,
+    required this.options,
+    this.note,
+    this.kind = 'choice',
+    this.required = false,
+    this.showWhen,
+  });
   final String id;
   final String label;
   final bool multiple;
   final List<OptionChoice> options;
+  final String? note;
+  final String kind;
+  final bool required;
+  final ShowWhen? showWhen;
+
+  bool get isChoice => kind == 'choice';
 
   factory SurveyQuestion.fromJson(Map<String, dynamic> json) {
     return SurveyQuestion(
       id: json['id'] as String,
       label: json['label'] as String,
-      multiple: json['multiple'] as bool,
-      options: (json['options'] as List).map((item) => OptionChoice.fromJson(item as Map<String, dynamic>)).toList(),
+      multiple: json['multiple'] as bool? ?? false,
+      options: ((json['options'] as List?) ?? []).map((item) => OptionChoice.fromJson(item as Map<String, dynamic>)).toList(),
+      note: json['note'] as String?,
+      kind: json['kind'] as String? ?? 'choice',
+      required: json['required'] as bool? ?? false,
+      showWhen: json['show_when'] == null ? null : ShowWhen.fromJson(json['show_when'] as Map<String, dynamic>),
     );
   }
 }

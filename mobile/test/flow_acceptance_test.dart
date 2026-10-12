@@ -22,7 +22,6 @@ class _Api implements BuyApi {
         CategoryInfo(id: 'laptop', name: '笔记本电脑'),
         CategoryInfo(id: 'phone', name: '手机'),
         CategoryInfo(id: 'tablet', name: '平板电脑'),
-        CategoryInfo(id: 'monitor', name: '显示器'),
         CategoryInfo(id: 'headphones', name: '耳机'),
       ];
 
@@ -71,6 +70,35 @@ Future<void> _skipRest(WidgetTester tester, int remaining) async {
   }
 }
 
+Future<void> _answerLaptopRequired(WidgetTester tester, {bool usage = true, String? idea}) async {
+  expect(find.text('预算大概多少？'), findsOneWidget);
+  expect(find.text('还没想好'), findsNothing);
+  expect(find.text('指笔记本本身的官方参考价，不含配件。'), findsOneWidget);
+  await tester.tap(find.text('5000–8000 元'));
+  await tester.pumpAndSettle();
+  await tester.tap(find.text('下一步'));
+  await tester.pumpAndSettle();
+  if (!usage) return;
+  expect(find.text('你的想法都可以告诉我', skipOffstage: false), findsOneWidget);
+  await tester.tap(find.text('写文档、做表格、上网课、浏览网页'));
+  await tester.pumpAndSettle();
+  if (idea != null) {
+    await _scrollTo(tester, find.byKey(const Key('free-text')));
+    await tester.enterText(find.byKey(const Key('free-text')), idea);
+    await tester.tap(find.text('下一步'));
+    await tester.pumpAndSettle();
+    return;
+  }
+  await tester.tap(find.text('下一步'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _finishOptionalLaptop(WidgetTester tester) async {
+  await _skipRest(tester, 4);
+  await tester.tap(find.text('下一步'));
+  await tester.pumpAndSettle();
+}
+
 void main() {
   testWidgets('backend down shows retry and recovers', (tester) async {
     final api = _Api(healthOk: false);
@@ -91,23 +119,16 @@ void main() {
     await tester.pumpWidget(BuyFlow(api: api));
     await tester.pumpAndSettle();
     await _openLaptop(tester);
-    expect(find.text('你主要用它来做什么？'), findsOneWidget);
-    expect(find.text('写文档、做表格、上网课、浏览网页'), findsOneWidget);
-    await tester.tap(find.text('写文档、做表格、上网课、浏览网页'));
-    await tester.pumpAndSettle();
-    await _scrollTo(tester, find.text('你的想法都可以告诉我'));
-    expect(find.text('你的想法都可以告诉我'), findsOneWidget);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('下一步'));
-    await tester.pumpAndSettle();
+    await _answerLaptopRequired(tester);
     expect(find.text('你会经常带着它出门吗？'), findsOneWidget);
-    await _skipRest(tester, 5);
+    await _finishOptionalLaptop(tester);
     expect(find.text('开始寻找符合你的产品'), findsOneWidget);
     await tester.tap(find.text('开始寻找符合你的产品'));
     await tester.pump();
     expect(find.textContaining('%'), findsNothing);
     await tester.pumpAndSettle();
     expect(api.payloads.single, [
+      {'question_id': 'budget', 'option_ids': ['5000_8000']},
       {'question_id': 'usage', 'option_ids': ['office']},
     ]);
     await _scrollTo(tester, find.text('暂未查到价格'));
@@ -122,12 +143,10 @@ void main() {
     await tester.pumpWidget(BuyFlow(api: api));
     await tester.pumpAndSettle();
     await _openLaptop(tester);
-    await _scrollTo(tester, find.byKey(const Key('free-text')));
-    await tester.enterText(find.byKey(const Key('free-text')), '主要写文档');
-    await _skipRest(tester, 6);
+    await _answerLaptopRequired(tester, idea: '主要写文档');
+    await _finishOptionalLaptop(tester);
     await tester.tap(find.text('开始寻找符合你的产品'));
     await tester.pumpAndSettle();
-    expect(api.payloads.single, isEmpty);
     expect(api.texts.single, '主要写文档');
   });
 
@@ -136,9 +155,8 @@ void main() {
     await tester.pumpWidget(BuyFlow(api: api));
     await tester.pumpAndSettle();
     await _openLaptop(tester);
-    await _scrollTo(tester, find.byKey(const Key('free-text')));
-    await tester.enterText(find.byKey(const Key('free-text')), '主要写文档');
-    await _skipRest(tester, 6);
+    await _answerLaptopRequired(tester, idea: '主要写文档');
+    await _finishOptionalLaptop(tester);
     await tester.tap(find.text('开始寻找符合你的产品'));
     await tester.pumpAndSettle();
     expect(find.text('网络连接失败'), findsOneWidget);
@@ -149,36 +167,28 @@ void main() {
     expect(find.text('主要写文档'), findsOneWidget);
   });
 
-  testWidgets('follow-up answer is sent and then shows the result', (tester) async {
-    var round = 0;
-    final api = _Api(onRecommend: (_, text, followUpRound) async {
-      round = followUpRound;
-      if (followUpRound == 0) {
-        return RecommendationResult(
-          requestId: 'follow',
-          status: 'need_more_info',
-          checkedAt: '2026-10-11T00:00:00Z',
-          alternatives: [],
-          comparison: [],
-          sources: [],
-          followUpQuestions: [FollowUpQuestion(text: '预算大概是多少？')],
-        );
-      }
-      return _sample();
+  testWidgets('search does not open a follow-up question page', (tester) async {
+    final api = _Api(onRecommend: (_, __, ___) async {
+      return RecommendationResult(
+        requestId: 'follow',
+        status: 'need_more_info',
+        checkedAt: '2026-10-11T00:00:00Z',
+        alternatives: [],
+        comparison: [],
+        sources: [],
+        followUpQuestions: [FollowUpQuestion(text: '预算大概是多少？')],
+      );
     });
     await tester.pumpWidget(BuyFlow(api: api));
     await tester.pumpAndSettle();
     await _openLaptop(tester);
-    await _skipRest(tester, 6);
+    await _answerLaptopRequired(tester);
+    await _finishOptionalLaptop(tester);
     await tester.tap(find.text('开始寻找符合你的产品'));
     await tester.pumpAndSettle();
-    expect(find.text('预算大概是多少？'), findsOneWidget);
-    await tester.enterText(find.byKey(const Key('follow-text')), '五千左右');
-    await tester.tap(find.text('继续'));
-    await tester.pumpAndSettle();
-    expect(round, 1);
-    expect(api.texts.last, contains('五千左右'));
-    expect(find.text('根据你的需求，优先考虑这款'), findsOneWidget);
+    expect(find.text('预算大概是多少？'), findsNothing);
+    expect(find.byKey(const Key('follow-text')), findsNothing);
+    expect(find.text('没有找到符合条件的产品'), findsOneWidget);
   });
 
   testWidgets('reasons, missing price, and sources follow the result sample', (tester) async {
@@ -186,21 +196,20 @@ void main() {
     await tester.pumpWidget(BuyFlow(api: api));
     await tester.pumpAndSettle();
     await _openLaptop(tester);
-    await tester.tap(find.text('写文档、做表格、上网课、浏览网页'));
-    await tester.pumpAndSettle();
-    await _scrollTo(tester, find.byKey(const Key('free-text')));
-    await tester.enterText(find.byKey(const Key('free-text')), '经常带出门');
-    await tester.tap(find.text('下一步'));
-    await tester.pumpAndSettle();
-    await _skipRest(tester, 5);
+    await _answerLaptopRequired(tester, idea: '经常带出门');
+    await _finishOptionalLaptop(tester);
     await tester.tap(find.text('开始寻找符合你的产品'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('查看详细理由').first);
+    await _scrollTo(tester, find.text('查看详细理由'));
+    await tester.tap(find.text('查看详细理由'));
     await tester.pumpAndSettle();
     expect(find.textContaining('经常带出门'), findsWidgets);
     expect(find.textContaining('写文档、做表格、上网课、浏览网页'), findsWidgets);
-    expect(find.text('官方资料事实'), findsOneWidget);
-    expect(find.text('适合性判断'), findsOneWidget);
+    expect(find.text('依据'), findsWidgets);
+    expect(find.text('影响'), findsWidgets);
+    expect(find.text('为什么适合你'), findsOneWidget);
+    expect(find.text('需要接受的取舍'), findsNothing);
+    expect(find.text('需要权衡什么'), findsNothing);
     expect(find.textContaining('续航官方数据未查到'), findsOneWidget);
     expect(find.textContaining('1.2kg'), findsWidgets);
     await _scrollTo(tester, find.text('重量'));

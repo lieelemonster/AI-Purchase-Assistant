@@ -3,7 +3,6 @@
     {"id": "laptop", "name": "笔记本电脑"},
     {"id": "phone", "name": "手机"},
     {"id": "tablet", "name": "平板电脑"},
-    {"id": "monitor", "name": "显示器"},
     {"id": "headphones", "name": "耳机"}
   ]
 }

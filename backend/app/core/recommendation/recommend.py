@@ -1,35 +1,25 @@
 import asyncio
-import itertools
+import hashlib
+import sqlite3
 import time
 from datetime import datetime, timezone
-from typing import Dict, List
+from typing import List
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.adapters.model.base import ModelGateway, ModelGatewayError
-from app.config.field_tables import load_field_table
+from app.catalog.library import LibraryProduct, budget_bounds_yuan, filter_by_brand, filter_candidates, load_products
 from app.config.settings import RuntimeConfig
-from app.core.candidates.generate import propose_candidates
-from app.core.needs.follow_up import plan_follow_up
 from app.core.needs.normalize import normalize_needs
-from app.core.recommendation.assemble import assemble_result
-from app.core.recommendation.hard_constraints import check_hard_constraints
-from app.core.recommendation.ranking import RankingError, fallback_reason, rank_and_explain
-from app.core.recommendation.reason_fill import ReasonFillError, fill_reasons
-from app.core.verification.budget import SearchBudget
-from app.core.verification.catalog_evidence import collect_catalog_evidence
-from app.core.verification.catalog_identity import _product_id, verify_catalog_identity
+from app.core.recommendation.assemble import build_comparison
+from app.core.recommendation.attribute_match import rank_by_attributes
 from app.core.verification.catalog_match import CatalogLike
-from app.core.verification.catalog_policies import dedupe_same_model, discover_candidates, match_with_retry, result_status
-from app.core.verification.conflicts import mark_field_conflicts
-from app.core.verification.evidence_set import PageReaderLike
-from app.core.verification.price_parsing import parse_reference_price
+from app.core.verification.catalog_policies import result_status
 from app.core.usage import current_usage, format_usage, start_usage
-from app.core.verification.spec_parsing import parse_spec_page
-from app.schemas.candidate import Candidate
+from app.core.verification.evidence_set import PageReaderLike
 from app.schemas.evidence import EvidenceDocument, PriceFact, VerifiedFact
-from app.schemas.need import OptionAnswer
-from app.schemas.result import RecommendationResult, UnresolvedItem
+from app.schemas.need import NeedProfile, OptionAnswer
+from app.schemas.result import EvidenceSource, Reason, RecommendationItem, RecommendationResult
 
 
 class RecommendRequest(BaseModel):
@@ -46,6 +36,91 @@ def _empty(request_id: str, status: str, **extra) -> RecommendationResult:
     return RecommendationResult(request_id=request_id, status=status, checked_at=datetime.now(timezone.utc), **extra)
 
 
+def _http_url(raw: str) -> str:
+    for part in raw.replace("；", ";").split(";"):
+        text = part.strip()
+        if text.startswith("http://") or text.startswith("https://"):
+            return text
+    return ""
+
+
+def _fill(index: int, product: LibraryProduct, reason: str, notes: str, need: NeedProfile):
+    candidate_id = f"c{index}"
+    evidence_id = f"e{index}"
+    lines = [f"{field}：{value}" for field, value in product.specs.items()]
+    if product.price_yuan is not None:
+        lines.append(f"参考价：{product.price_yuan}")
+    text = "\n".join(lines)
+    url = _http_url(product.source_url) or f"catalog://{product.product_id}"
+    document = EvidenceDocument(
+        evidence_id=evidence_id,
+        url=url,
+        final_url=url,
+        title=product.name,
+        fetched_at=datetime.now(timezone.utc),
+        fetch_status="ok",
+        content_hash=hashlib.sha256(text.encode("utf-8")).hexdigest(),
+        text=text,
+    )
+    facts = [
+        VerifiedFact(
+            fact_id=f"f{index}{offset:02d}",
+            candidate_id=candidate_id,
+            field=field,
+            value=value,
+            evidence_id=evidence_id,
+            excerpt=value,
+            status="supported",
+        )
+        for offset, (field, value) in enumerate(product.specs.items(), start=1)
+    ]
+    if product.price_yuan is None:
+        price = PriceFact(
+            candidate_id=candidate_id,
+            status="unknown",
+            price_basis="unknown",
+            conditions=["参考价未确认"],
+        )
+    else:
+        price = PriceFact(
+            candidate_id=candidate_id,
+            amount_minor=product.price_yuan * 100,
+            minor_unit_digits=2,
+            currency="CNY",
+            region="CN",
+            price_basis="catalog_reference",
+            conditions=["参考价，只比较数字，不含配件、蜂窝和国补"],
+            evidence_id=evidence_id,
+            excerpt=f"参考价：{product.price_yuan}",
+            status="supported",
+        )
+    limitations = []
+    if product.price_yuan is None:
+        limitations.append("参考价未确认")
+    if index == 1 and notes:
+        limitations.append(notes)
+    item = RecommendationItem(
+        candidate_id=candidate_id,
+        name=product.name,
+        facts=facts,
+        price=price,
+        reasons=[Reason(
+            need_refs=[need.requirements[0].requirement_id] if need.requirements else ["unknown:budget"],
+            conclusion_type="judgment",
+            text=reason,
+            limitations=limitations,
+        )],
+    )
+    source = EvidenceSource(
+        evidence_id=evidence_id,
+        url=url,
+        title=product.name,
+        fetched_at=document.fetched_at,
+        source_name="本地产品库",
+    )
+    return item, source
+
+
 async def _recommend(
     request: RecommendRequest,
     *,
@@ -54,6 +129,7 @@ async def _recommend(
     reader: PageReaderLike,
     config: RuntimeConfig,
 ) -> RecommendationResult:
+    del catalog, reader
     usage = current_usage()
     started = time.perf_counter()
 
@@ -65,107 +141,39 @@ async def _recommend(
 
     need = await normalize_needs(request.category_id, request.option_answers, request.free_text, model)
     mark("需求")
-    follow_up = await plan_follow_up(need, request.follow_up_round, model)
-    if follow_up is not None:
-        return _empty(request.request_id, "need_more_info", follow_up=follow_up)
 
-    proposed = await propose_candidates(need, model, config.max_candidates)
+    try:
+        products = load_products(config.catalog_db_path, request.category_id)
+    except sqlite3.Error:
+        return _empty(request.request_id, "failed")
+    floor, ceiling = budget_bounds_yuan(need)
+    candidates = filter_by_brand(filter_candidates(products, floor, ceiling), need.free_text, products)
     mark("候选")
-    matches = await match_with_retry(proposed, need, model, catalog, SearchBudget(config.max_search_calls))
-    matches = dedupe_same_model(matches)
-    extra_candidates, extra_matches = discover_candidates(proposed, matches)
-    candidates = proposed + extra_candidates
-    matches = matches + extra_matches
-    mark("检索")
-    by_id = {candidate.candidate_id: candidate for candidate in candidates}
+    if not candidates:
+        return _empty(request.request_id, "insufficient_candidates")
 
-    evidence = await collect_catalog_evidence(
-        matches,
-        reader,
-        max_pages=config.max_pages,
-        concurrency=1,
-    )
-    mark("读取")
-    table = load_field_table(request.category_id)
-    fact_ids = itertools.count(1)
-    price_fallback_ids = itertools.count(900)
-    facts: Dict[str, List[VerifiedFact]] = {}
-    prices: Dict[str, PriceFact] = {}
-    unresolved: List[UnresolvedItem] = []
-    usable: List[Candidate] = []
-
-    for match in matches:
-        pages = evidence.pages.get(match.candidate_id)
-        candidate = by_id.get(match.candidate_id)
-        if pages is None or candidate is None or match.hit is None:
-            continue
-        parsed = parse_spec_page(
-            evidence.documents[pages.detail_evidence_id],
-            table,
-            match.candidate_id,
-            lambda: f"f{next(fact_ids)}",
-        )
-        if parsed.status != "ok":
-            continue
-        checked_facts, conflicts = mark_field_conflicts(parsed.facts)
-        unresolved.extend(conflicts)
-        identity = verify_catalog_identity(match, pages, evidence.documents, checked_facts)
-        if identity.status != "ok":
-            continue
-        price = parse_reference_price(
-            evidence.documents[pages.price_evidence_id],
-            match.candidate_id,
-            match.hit.name,
-            identity.multi_config,
-        )
-        if price.status != "supported":
-            fallback = await reader.read(match.hit.price_url, f"e{next(price_fallback_ids)}")
-            if _product_id(fallback) == match.hit.product_id:
-                parsed = parse_reference_price(fallback, match.candidate_id, match.hit.name, identity.multi_config)
-                if parsed.status == "supported":
-                    evidence.documents[fallback.evidence_id] = fallback
-                    price = parsed
-        facts[match.candidate_id] = identity.facts
-        prices[match.candidate_id] = price
-        usable.append(candidate)
-
-    constraints = check_hard_constraints(need, prices)
-    usable = [candidate for candidate in usable if constraints[candidate.candidate_id].status != "excluded"]
-    if not usable:
-        return _empty(request.request_id, "insufficient_candidates", unresolved_items=unresolved)
-
-    ranked = await rank_and_explain(
-        need,
-        usable,
-        facts,
-        prices,
-        model,
-        max_attempts=config.max_retries + 1,
-    )
+    chosen = rank_by_attributes(request.category_id, need.option_answers, need.free_text, candidates)
     mark("排序")
-    names = [candidate.model_hint for candidate in usable]
-    filled = {}
-    for candidate in usable:
-        reasons = fill_reasons(
-            ranked.reasons.get(candidate.candidate_id, []),
-            candidate=candidate,
-            facts=facts.get(candidate.candidate_id, []),
-            prices=prices,
-            names=names,
-        )
-        filled[candidate.candidate_id] = reasons or [fallback_reason(need, names)]
-    ordered = [by_id[candidate_id] for candidate_id in ranked.order]
-    shown_count = min(3, len(ordered))
-    return assemble_result(
+    if not chosen:
+        return _empty(request.request_id, "insufficient_candidates")
+
+    by_id = {product.product_id: product for product in candidates}
+    items = []
+    sources = []
+    for index, choice in enumerate(chosen, start=1):
+        item, source = _fill(index, by_id[choice.product_id], choice.reason, "", need)
+        items.append(item)
+        sources.append(source)
+    prices = [item.price for item in items]
+    return RecommendationResult(
         request_id=request.request_id,
-        status=result_status(shown_count),
-        ordered=ordered[:shown_count],
-        facts=facts,
-        prices=prices,
-        reasons=filled,
-        documents=evidence.documents,
+        status=result_status(len(items)),
+        primary=items[0],
+        alternatives=items[1:],
+        comparison=build_comparison(items[0].price, prices),
+        evidence_sources=sources,
         checked_at=datetime.now(timezone.utc),
-    ).model_copy(update={"unresolved_items": unresolved})
+    )
 
 
 async def recommend(
@@ -186,7 +194,5 @@ async def recommend(
         return _empty(request.request_id, "timeout")
     except ModelGatewayError:
         return _empty(request.request_id, "service_unavailable")
-    except (RankingError, ReasonFillError):
-        return _empty(request.request_id, "failed")
     finally:
         print(format_usage(usage))

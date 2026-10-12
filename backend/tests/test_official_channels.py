@@ -100,4 +100,4 @@ def test_malformed_channel_rules_are_rejected(channel):
 
 
 def test_config_file_loads_all_brands():
-    assert len(load_official_channels().brands) == 49
+    assert len(load_official_channels().brands) == 42

@@ -1,11 +1,25 @@
 {
   "category_id": "tablet",
-  "version": "v1",
+  "version": "v2",
   "questions": [
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "note": "先按「平板机身」算；若下面需要笔／键盘，会再问预算是否含配件。",
+      "multiple": false,
+      "required": true,
+      "options": [
+        {"id": "under_2000", "label": "2000 元以下"},
+        {"id": "2000_4000", "label": "2000–4000 元"},
+        {"id": "4000_7000", "label": "4000–7000 元"},
+        {"id": "over_7000", "label": "7000 元以上"}
+      ]
+    },
     {
       "id": "usage",
       "label": "你主要用它来做什么？",
       "multiple": true,
+      "required": true,
       "options": [
         {"id": "entertainment", "label": "看视频、刷剧、看书"},
         {"id": "notes", "label": "学习、手写记笔记"},
@@ -28,8 +42,20 @@
       ]
     },
     {
+      "id": "budget_scope",
+      "label": "预算是「只平板」还是「平板 + 笔／键盘」？",
+      "multiple": false,
+      "required": true,
+      "show_when": {"any_of": [{"question_id": "accessories", "option_ids": ["stylus", "keyboard"]}]},
+      "options": [
+        {"id": "body_only", "label": "只算平板"},
+        {"id": "with_accessories", "label": "平板 + 笔／键盘"}
+      ]
+    },
+    {
       "id": "devices",
-      "label": "你现在主要用哪类手机或电脑？（影响设备之间的互联体验）",
+      "label": "你现在主要用哪类手机或电脑？",
+      "note": "影响设备互联体验。",
       "multiple": false,
       "options": [
         {"id": "apple", "label": "苹果设备"},
@@ -49,16 +75,9 @@
       ]
     },
     {
-      "id": "budget",
-      "label": "预算大概多少？",
-      "multiple": false,
-      "options": [
-        {"id": "under_2000", "label": "2000 元以下"},
-        {"id": "2000_4000", "label": "2000–4000 元"},
-        {"id": "4000_7000", "label": "4000–7000 元"},
-        {"id": "over_7000", "label": "7000 元以上"},
-        {"id": "not_sure", "label": "还没想好"}
-      ]
+      "id": "constraints",
+      "label": "还有什么必须满足或绝对不要的？",
+      "kind": "text"
     }
   ]
 }

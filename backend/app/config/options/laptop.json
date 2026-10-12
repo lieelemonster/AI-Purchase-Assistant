@@ -1,11 +1,25 @@
 {
   "category_id": "laptop",
-  "version": "v1",
+  "version": "v2",
   "questions": [
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "note": "指笔记本本身的官方参考价，不含配件。",
+      "multiple": false,
+      "required": true,
+      "options": [
+        {"id": "under_5000", "label": "5000 元以下"},
+        {"id": "5000_8000", "label": "5000–8000 元"},
+        {"id": "8000_12000", "label": "8000–12000 元"},
+        {"id": "over_12000", "label": "12000 元以上"}
+      ]
+    },
     {
       "id": "usage",
       "label": "你主要用它来做什么？",
       "multiple": true,
+      "required": true,
       "options": [
         {"id": "office", "label": "写文档、做表格、上网课、浏览网页"},
         {"id": "programming", "label": "编程开发"},
@@ -23,20 +37,6 @@
         {"id": "often", "label": "经常带（通勤、出差、上课）"},
         {"id": "sometimes", "label": "偶尔带"},
         {"id": "desk", "label": "基本放在桌上"},
-        {"id": "not_sure", "label": "还不确定"}
-      ]
-    },
-    {
-      "id": "priorities",
-      "label": "你更看重哪些方面？",
-      "multiple": true,
-      "options": [
-        {"id": "battery", "label": "续航长，一天不用插电"},
-        {"id": "light", "label": "轻薄"},
-        {"id": "screen", "label": "屏幕显示效果好"},
-        {"id": "performance", "label": "性能强"},
-        {"id": "quiet", "label": "安静，风扇声小"},
-        {"id": "ports", "label": "接口多，少用转接头"},
         {"id": "not_sure", "label": "还不确定"}
       ]
     },
@@ -62,16 +62,42 @@
       ]
     },
     {
-      "id": "budget",
-      "label": "预算大概多少？",
-      "multiple": false,
+      "id": "priorities",
+      "label": "你更看重哪些方面？",
+      "multiple": true,
       "options": [
-        {"id": "under_5000", "label": "5000 元以下"},
-        {"id": "5000_8000", "label": "5000–8000 元"},
-        {"id": "8000_12000", "label": "8000–12000 元"},
-        {"id": "over_12000", "label": "12000 元以上"},
-        {"id": "not_sure", "label": "还没想好"}
+        {"id": "battery", "label": "上班／上课希望尽量少插电"},
+        {"id": "light", "label": "轻薄"},
+        {"id": "screen", "label": "屏幕显示效果好"},
+        {"id": "performance", "label": "性能强"},
+        {"id": "quiet", "label": "安静，风扇声小"},
+        {"id": "ports", "label": "接口多，少用转接头"},
+        {"id": "gaming_body", "label": "可以接受游戏本外观和厚度"},
+        {"id": "not_sure", "label": "还不确定"}
       ]
+    },
+    {
+      "id": "gaming_light",
+      "label": "大型游戏和轻薄，哪边更优先？",
+      "multiple": false,
+      "required": true,
+      "show_when": {
+        "all_of": [{"question_id": "usage", "option_ids": ["gaming"]}],
+        "any_of": [
+          {"question_id": "portability", "option_ids": ["often"]},
+          {"question_id": "screen_size", "option_ids": ["13_14"]},
+          {"question_id": "priorities", "option_ids": ["light"]}
+        ]
+      },
+      "options": [
+        {"id": "gaming_first", "label": "优先保证能玩大型游戏"},
+        {"id": "light_first", "label": "优先轻薄"}
+      ]
+    },
+    {
+      "id": "constraints",
+      "label": "还有什么必须满足或绝对不要的？",
+      "kind": "text"
     }
   ]
 }

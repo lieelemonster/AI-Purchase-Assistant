@@ -10,5 +10,6 @@
   "source_min_interval_s": 6,
   "model_max_output_tokens": 4000,
   "rate_limit_per_minute": 30,
-  "max_concurrent_requests": 2
+  "max_concurrent_requests": 2,
+  "catalog_db_path": "/Users/a1-6/Downloads/electronics_products.db"
 }

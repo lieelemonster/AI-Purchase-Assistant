@@ -13,7 +13,7 @@ from app.schemas.result import (
 )
 
 # 同一口径、可以相减的价格类型。起售价只表示最低配置，不能和具体配置价直接比。
-COMPARABLE_BASES = {"pconline_reference", "list_price"}
+COMPARABLE_BASES = {"pconline_reference", "list_price", "catalog_reference"}
 PCONLINE_SOURCE = "太平洋电脑网"
 
 

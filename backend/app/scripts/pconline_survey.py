@@ -1,4 +1,4 @@
-"""五个品类各抽 2 个型号，检查太平洋产品库能否搜到、读到参数和参考价。
+"""笔记本、手机、平板、耳机各抽 2 个型号，检查太平洋产品库能否搜到、读到参数和参考价。
 
 用法：python -m app.scripts.pconline_survey
 """
@@ -20,8 +20,6 @@ SAMPLES = [
     ("手机", "phone", "小米15"),
     ("平板电脑", "tablet", "苹果iPad Air"),
     ("平板电脑", "tablet", "华为MatePad"),
-    ("显示器", "monitor", "戴尔U2724D"),
-    ("显示器", "monitor", "小米显示器"),
     ("耳机", "headphones", "索尼WH-1000XM5"),
     ("耳机", "headphones", "华为FreeBuds"),
 ]

@@ -84,6 +84,13 @@ def validate_answers(config: OptionConfig, answers: List[OptionAnswer]) -> None:
 
 
 OPTION_BUDGET = re.compile(r"^(?:under_(\d+)|(\d+)_(\d+)|over_(\d+))$")
+STATED_BUDGET_CAP = re.compile(r"预算上限：\s*(\d+)")
+
+
+def stated_budget_cap_yuan(text: str) -> Optional[int]:
+    """用户在「还没想好」之后填写的预算上限。原文里可能写了多次，取最小的那个。"""
+    amounts = [int(item) for item in STATED_BUDGET_CAP.findall(text or "")]
+    return min(amounts) if amounts else None
 
 
 def _option_budget(option_id: str) -> Optional[Tuple[Optional[int], Optional[int]]]:

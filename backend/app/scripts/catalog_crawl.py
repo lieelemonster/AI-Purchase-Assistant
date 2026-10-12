@@ -1,4 +1,4 @@
-"""从太平洋产品库 sitemap 抓取五个品类的近期产品，写入本地 SQLite。
+"""从太平洋产品库 sitemap 抓取笔记本、手机、平板和耳机的近期产品，写入本地 SQLite。
 
 只访问 product.pconline.com.cn 上 robots.txt 允许的产品首页和参数页。
 不访问 ks.pconline.com.cn（该站 Disallow: /）。请求间隔使用运行配置，目前是 3 秒。
@@ -28,16 +28,15 @@ NS = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
 # 2026-10-11 起算，近两年。
 CUTOFF = date(2024, 10, 11)
 HOME_URL = re.compile(
-    r"^https?://product\.pconline\.com\.cn/(notebook|mobile|tabletpc|lcd|earphone)/([a-z0-9_]+)/(\d+)\.html$"
+    r"^https?://product\.pconline\.com\.cn/(notebook|mobile|tabletpc|earphone)/([a-z0-9_]+)/(\d+)\.html$"
 )
 DATE_TEXT = re.compile(r"(20\d{2})\s*年(?:\s*(\d{1,2})\s*月)?(?:\s*(\d{1,2})\s*日)?")
 
-# 目录名来自太平洋产品库网址，对应《中国电商官方渠道汇总》里这五个品类的品牌。
+# 目录名来自太平洋产品库网址，对应渠道汇总里笔记本、手机、平板、耳机的品牌。
 CATEGORY_BY_DIR = {
     "notebook": "laptop",
     "mobile": "phone",
     "tabletpc": "tablet",
-    "lcd": "monitor",
     "earphone": "headphones",
 }
 BRAND_DIRS = {
@@ -52,10 +51,6 @@ BRAND_DIRS = {
     "tabletpc": {
         "apple", "huawei", "xiaomi", "redmi", "lenovo", "samsung", "honor", "oppo", "vivo",
         "iqoo", "realme", "microsoft", "teclast", "cube", "nubia", "zte",
-    },
-    "lcd": {
-        "aoc", "lg", "samsung", "viewsonic", "asus", "acer", "xiaomi", "ktc", "hp", "hkc",
-        "dell", "machenike", "titanarmy", "lenovo", "antgamer", "thunderobot",
     },
     "earphone": {
         "beats", "bose", "jbl", "1more", "samsung", "huawei", "soundcore", "xiaomi",

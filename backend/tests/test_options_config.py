@@ -11,7 +11,11 @@ def test_every_category_has_a_valid_versioned_option_file(category_id):
     config = load_options(category_id)
     assert config.category_id == category_id
     assert config.version
-    assert all(len(q.options) >= 2 for q in config.questions)
+    for question in config.questions:
+        if question.kind == "choice":
+            assert len(question.options) >= 2
+        else:
+            assert question.options == []
 
 
 def test_unknown_category_has_no_options():

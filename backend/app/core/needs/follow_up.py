@@ -7,6 +7,7 @@ from pydantic import BaseModel, ConfigDict
 
 from app.adapters.model.base import ModelGateway
 from app.config.option_loader import load_options
+from app.core.needs.normalize import stated_budget_cap_yuan
 from app.schemas.follow_up import FollowUpQuestion, FollowUpRequest
 from app.schemas.need import NeedProfile
 
@@ -50,6 +51,8 @@ def find_missing(profile: NeedProfile) -> List[str]:
     missing = []
     for question_id in info.required_questions[profile.category_id]:
         if question_id in answered:
+            continue
+        if question_id == "budget" and stated_budget_cap_yuan(profile.free_text) is not None:
             continue
         if question_id in from_text and question_id not in profile.unknowns:
             continue

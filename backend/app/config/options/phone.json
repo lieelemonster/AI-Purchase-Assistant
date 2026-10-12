@@ -1,32 +1,31 @@
 {
   "category_id": "phone",
-  "version": "v1",
+  "version": "v2",
   "questions": [
+    {
+      "id": "budget",
+      "label": "预算大概多少？",
+      "note": "指手机官方参考价，不含会员／延保。",
+      "multiple": false,
+      "required": true,
+      "options": [
+        {"id": "under_2000", "label": "2000 元以下"},
+        {"id": "2000_4000", "label": "2000–4000 元"},
+        {"id": "4000_6000", "label": "4000–6000 元"},
+        {"id": "over_6000", "label": "6000 元以上"}
+      ]
+    },
     {
       "id": "usage",
       "label": "你主要用它来做什么？",
       "multiple": true,
+      "required": true,
       "options": [
         {"id": "daily", "label": "日常聊天、刷视频、上网"},
         {"id": "camera", "label": "拍照、拍视频"},
         {"id": "gaming", "label": "玩游戏"},
         {"id": "business", "label": "工作商务（频繁通话、多开应用）"},
         {"id": "elder", "label": "给长辈用"},
-        {"id": "not_sure", "label": "还不确定"}
-      ]
-    },
-    {
-      "id": "priorities",
-      "label": "你更看重哪些方面？",
-      "multiple": true,
-      "options": [
-        {"id": "camera", "label": "拍照效果"},
-        {"id": "battery", "label": "续航"},
-        {"id": "performance", "label": "性能流畅"},
-        {"id": "compact", "label": "小巧轻便"},
-        {"id": "big_screen", "label": "大屏"},
-        {"id": "signal", "label": "信号和通话质量"},
-        {"id": "long_updates", "label": "系统更新支持久"},
         {"id": "not_sure", "label": "还不确定"}
       ]
     },
@@ -42,16 +41,30 @@
       ]
     },
     {
-      "id": "budget",
-      "label": "预算大概多少？",
-      "multiple": false,
+      "id": "priorities",
+      "label": "你更看重哪些方面？",
+      "multiple": true,
       "options": [
-        {"id": "under_2000", "label": "2000 元以下"},
-        {"id": "2000_4000", "label": "2000–4000 元"},
-        {"id": "4000_6000", "label": "4000–6000 元"},
-        {"id": "over_6000", "label": "6000 元以上"},
-        {"id": "not_sure", "label": "还没想好"}
+        {"id": "camera", "label": "拍照效果"},
+        {"id": "battery", "label": "续航"},
+        {"id": "performance", "label": "性能流畅"},
+        {"id": "compact", "label": "小巧轻便"},
+        {"id": "big_screen", "label": "大屏"},
+        {"id": "signal", "label": "信号和通话质量"},
+        {"id": "long_updates", "label": "系统更新支持久"},
+        {"id": "high_refresh", "label": "高刷新率屏幕"},
+        {"id": "not_sure", "label": "还不确定"}
       ]
+    },
+    {
+      "id": "brand",
+      "label": "有没有一定要或一定不要的品牌？",
+      "kind": "text"
+    },
+    {
+      "id": "constraints",
+      "label": "还有什么必须满足或绝对不要的？",
+      "kind": "text"
     }
   ]
 }

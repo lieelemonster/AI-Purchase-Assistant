@@ -19,6 +19,7 @@ PARAMS = [
     "model_max_output_tokens",
     "rate_limit_per_minute",
     "max_concurrent_requests",
+    "catalog_db_path",
 ]
 
 

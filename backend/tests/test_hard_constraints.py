@@ -61,9 +61,8 @@ def test_laptop_budget_allows_five_hundred_yuan_outside_each_end():
     assert result["c4"].status == "excluded"
 
 
-def test_monitor_and_headphones_allow_one_hundred_fifty_yuan():
+def test_headphones_allow_one_hundred_fifty_yuan():
     for category_id, option_id, low, high in (
-        ("monitor", "1000_2000", 100000, 200000),
         ("headphones", "300_1000", 30000, 100000),
     ):
         need = NeedProfile(

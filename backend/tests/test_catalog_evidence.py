@@ -45,16 +45,17 @@ def collect(matches, reader, max_pages=12, concurrency=4):
 def test_each_match_reads_its_detail_and_price_pages():
     reader = FakeReader()
     result = collect([match("c1", "100")], reader)
-    assert reader.urls == ["https://product.pconline.com.cn/notebook/demo/100_detail.html",
-                           "https://product.pconline.com.cn/notebook/demo/100_price.html"]
+    assert reader.urls == ["https://product.pconline.com.cn/notebook/demo/100.html",
+                           "https://product.pconline.com.cn/notebook/demo/100_detail.html"]
     pages = result.pages["c1"]
-    assert (pages.product_id, pages.detail_evidence_id, pages.price_evidence_id) == ("100", "e1", "e2")
+    assert (pages.product_id, pages.detail_evidence_id, pages.price_evidence_id) == ("100", "e2", "e1")
 
 
 def test_unmatched_candidates_are_not_read():
     reader = FakeReader()
     collect([match("c1", "100", status="unknown"), match("c2", "200")], reader)
-    assert all("/200_" in u for u in reader.urls)
+    assert reader.urls
+    assert all("/200" in u for u in reader.urls)
 
 
 def test_redirect_off_the_product_page_is_skipped():
@@ -72,8 +73,8 @@ def test_redirect_to_another_product_is_skipped():
 
 
 def test_failed_read_is_kept_as_unavailable():
-    price = "https://product.pconline.com.cn/notebook/demo/100_price.html"
-    result = collect([match("c1", "100")], FakeReader({price: {"fail": "timeout"}}))
+    home = "https://product.pconline.com.cn/notebook/demo/100.html"
+    result = collect([match("c1", "100")], FakeReader({home: {"fail": "timeout"}}))
     assert result.documents[result.pages["c1"].price_evidence_id].fetch_status == "unavailable"
 
 
@@ -92,9 +93,9 @@ def test_concurrency_limit_is_respected():
 
 def test_two_requests_do_not_mix_evidence():
     async def both():
-        a = collect_catalog_evidence([match("c1", "1")], FakeReader({"https://product.pconline.com.cn/notebook/demo/1_detail.html": {"text": "A"}}),
+        a = collect_catalog_evidence([match("c1", "1")], FakeReader({"https://product.pconline.com.cn/notebook/demo/1.html": {"text": "A"}}),
                                      max_pages=4, concurrency=2)
-        b = collect_catalog_evidence([match("c1", "2")], FakeReader({"https://product.pconline.com.cn/notebook/demo/2_detail.html": {"text": "B"}}),
+        b = collect_catalog_evidence([match("c1", "2")], FakeReader({"https://product.pconline.com.cn/notebook/demo/2.html": {"text": "B"}}),
                                      max_pages=4, concurrency=2)
         return await asyncio.gather(a, b)
 

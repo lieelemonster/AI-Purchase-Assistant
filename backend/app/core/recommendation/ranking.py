@@ -1,17 +1,20 @@
 import re
-from typing import Dict, List, Literal, Set
+from typing import Dict, List, Literal, Optional, Set
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.adapters.model.base import ModelGateway, ModelGatewayError
 from app.config.field_tables import load_field_table
+from app.core.recommendation.reason_fill import contains_unsupported_literal
 from app.schemas.candidate import Candidate
 from app.schemas.evidence import PriceFact, VerifiedFact
-from app.schemas.need import NeedProfile
+from app.schemas.need import NeedProfile, Requirement
 from app.schemas.result import Reason
 
 RESULT_SIZE = 3
 PLACEHOLDER = re.compile(r"\{\{(name|fact|price):([a-z0-9]+)\}\}")
+_STRICTNESS_RANK = {"hard": 0, "soft": 1, "unknown": 2}
+_UNCITED = "没有引用到可核实的参数，按需求优先级判断"
 
 TASK = (
     "你是购买顾问。请根据用户需求和每个候选在太平洋电脑网读到的参数、参考价，选出最适合的几款并排序，"
@@ -81,8 +84,79 @@ def _price_view(price) -> dict:
     return {"ref": f"price:{price.candidate_id}", "yuan": price.amount_minor / 100, "basis": price.price_basis}
 
 
+def prioritized_requirements(need: NeedProfile) -> List[Requirement]:
+    """必须满足的需求在前，其次是倾向，最后是说不清的；同一档保持用户表达的先后。"""
+    indexed = list(enumerate(need.requirements))
+    indexed.sort(key=lambda pair: (_STRICTNESS_RANK[pair[1].strictness], pair[0]))
+    return [item for _, item in indexed]
+
+
+def fallback_reason(need: NeedProfile, names: Optional[List[str]] = None) -> Reason:
+    """引用不到资料时的理由：只复述需求优先级，不写没有出处的数字或型号。"""
+    cleaned = []
+    refs = []
+    for requirement in prioritized_requirements(need):
+        text = _plain_statement(requirement.statement, names or [])
+        if not text:
+            continue
+        cleaned.append(text)
+        refs.append(requirement.requirement_id)
+        if len(cleaned) == 2:
+            break
+    if not refs:
+        refs = [f"unknown:{topic}" for topic in need.unknowns[:1]]
+    if cleaned:
+        body = f"按你更优先的需求来看，更符合「{'、'.join(cleaned)}」。这项没有引用到可核实的参数。"
+    else:
+        body = "这项没有引用到可核实的参数，先按你的需求优先级推荐。"
+        if not refs:
+            refs = ["unknown:need"]
+    return Reason(
+        need_refs=refs,
+        fact_refs=[],
+        conclusion_type="judgment",
+        text=body,
+        limitations=[_UNCITED],
+    )
+
+
+def _plain_statement(statement: str, names: List[str]) -> str:
+    text = statement
+    for name in sorted(names, key=len, reverse=True):
+        if name:
+            text = text.replace(name, "")
+    text = re.sub(r"[0-9]", "", text)
+    text = re.sub(r"[¥￥$€]", "", text)
+    return re.sub(r"\s+", "", text).strip("，,。；;、")
+
+
+def _fact_ids(cid: str, facts: Dict[str, List[VerifiedFact]], prices: Dict[str, PriceFact]) -> Set[str]:
+    allowed = {fact.fact_id for fact in facts.get(cid, []) if fact.status == "supported"}
+    price = prices.get(cid)
+    if price is not None and price.status == "supported":
+        allowed.add(f"price:{cid}")
+    return allowed
+
+
+def _reason_problems(cid: str, reason: _DraftReason, need_ids: Set[str], fact_ids: Set[str], names: List[str]) -> List[str]:
+    problems = []
+    if not reason.need_refs or not set(reason.need_refs) <= need_ids:
+        problems.append(f"{cid} 的理由引用了不存在的需求：{reason.need_refs}")
+    if not set(reason.fact_refs) <= fact_ids:
+        problems.append(f"{cid} 的理由引用了不属于它的参数：{reason.fact_refs}")
+    if reason.conclusion_type == "fact" and not reason.fact_refs:
+        problems.append(f"{cid} 的事实类理由没有引用参数")
+    for kind, ref in PLACEHOLDER.findall(reason.text):
+        target = ref if kind == "fact" else f"price:{ref}" if kind == "price" else None
+        if kind == "name" and ref != cid or target is not None and target not in fact_ids:
+            problems.append(f"{cid} 的理由占位符引用不当：{kind}:{ref}")
+    if contains_unsupported_literal(reason.text, names):
+        problems.append(f"{cid} 的理由含有无法引用到资料的数字或型号")
+    return problems
+
+
 def _problems(draft: _DraftRanking, need: NeedProfile, allowed: Set[str],
-              facts: Dict[str, List[VerifiedFact]], prices: Dict[str, PriceFact]) -> List[str]:
+              facts: Dict[str, List[VerifiedFact]], prices: Dict[str, PriceFact], names: List[str]) -> List[str]:
     problems = []
     expected = min(RESULT_SIZE, len(allowed))
     if len(draft.ranking) != expected or len(set(draft.ranking)) != len(draft.ranking):
@@ -92,25 +166,56 @@ def _problems(draft: _DraftRanking, need: NeedProfile, allowed: Set[str],
         if cid not in allowed:
             problems.append(f"{cid} 不在允许的候选中")
             continue
-        fact_ids = {f.fact_id for f in facts.get(cid, []) if f.status == "supported"}
-        price = prices.get(cid)
-        if price is not None and price.status == "supported":
-            fact_ids.add(f"price:{cid}")
+        fact_ids = _fact_ids(cid, facts, prices)
         reasons = draft.reasons.get(cid, [])
         if not reasons:
             problems.append(f"{cid} 没有推荐理由")
         for reason in reasons:
-            if not reason.need_refs or not set(reason.need_refs) <= need_ids:
-                problems.append(f"{cid} 的理由引用了不存在的需求：{reason.need_refs}")
-            if not set(reason.fact_refs) <= fact_ids:
-                problems.append(f"{cid} 的理由引用了不属于它的参数：{reason.fact_refs}")
-            if reason.conclusion_type == "fact" and not reason.fact_refs:
-                problems.append(f"{cid} 的事实类理由没有引用参数")
-            for kind, ref in PLACEHOLDER.findall(reason.text):
-                target = ref if kind == "fact" else f"price:{ref}" if kind == "price" else None
-                if kind == "name" and ref != cid or target is not None and target not in fact_ids:
-                    problems.append(f"{cid} 的理由占位符引用不当：{kind}:{ref}")
+            problems.extend(_reason_problems(cid, reason, need_ids, fact_ids, names))
     return problems
+
+
+def _salvage(draft: Optional[_DraftRanking], need: NeedProfile, allowed: Set[str],
+             facts: Dict[str, List[VerifiedFact]], prices: Dict[str, PriceFact], names: List[str]) -> Dict[str, List[Reason]]:
+    kept: Dict[str, List[Reason]] = {}
+    if draft is None:
+        return kept
+    need_ids = {r.requirement_id for r in need.requirements} | {f"unknown:{t}" for t in need.unknowns}
+    for cid in allowed:
+        good = []
+        for reason in draft.reasons.get(cid, []):
+            if _reason_problems(cid, reason, need_ids, _fact_ids(cid, facts, prices), names):
+                continue
+            good.append(Reason(**reason.model_dump()))
+        if good:
+            kept[cid] = good
+    return kept
+
+
+def _priority_order(candidates: List[Candidate], ranking: List[str], salvaged: Dict[str, List[Reason]],
+                    need: NeedProfile) -> List[str]:
+    allowed = [candidate.candidate_id for candidate in candidates]
+    allowed_set = set(allowed)
+    model_rank = {}
+    for index, cid in enumerate(ranking):
+        if cid in allowed_set and cid not in model_rank:
+            model_rank[cid] = index
+    priority = [item.requirement_id for item in prioritized_requirements(need)]
+
+    def cited_needs(cid: str) -> Set[str]:
+        refs = set()
+        for reason in salvaged.get(cid, []):
+            if reason.fact_refs:
+                refs.update(reason.need_refs)
+        return refs
+
+    def sort_key(cid: str):
+        cited = cited_needs(cid)
+        score = tuple(-(1 if req in cited else 0) for req in priority)
+        return (score, model_rank.get(cid, len(allowed)), allowed.index(cid))
+
+    ordered = sorted(allowed, key=sort_key)
+    return ordered[:min(RESULT_SIZE, len(ordered))]
 
 
 async def rank_and_explain(
@@ -121,10 +226,15 @@ async def rank_and_explain(
     model: ModelGateway,
     max_attempts: int = 2,
 ) -> RankingResult:
-    """排序和理由交给模型；程序核对排名和所有引用。不合格时重试，仍不合格抛出 RankingError。"""
+    """排序和理由交给模型；程序核对引用。核对通过的理由优先保留。
+
+    重试后仍有理由引用不到资料时，不再整次失败：能引用的留下，引用不到的按需求优先级补一条适合性判断。
+    """
     allowed = {c.candidate_id for c in candidates}
+    names = [c.model_hint for c in candidates]
     payload = _payload(need, candidates, facts, prices)
     feedback: List[str] = []
+    last_draft: Optional[_DraftRanking] = None
     for _ in range(max_attempts):
         try:
             draft = await model.generate_json(task=TASK, payload={**payload, "previous_problems": feedback},
@@ -134,10 +244,16 @@ async def rank_and_explain(
                 raise
             feedback = [str(e)]
             continue
-        feedback = _problems(draft, need, allowed, facts, prices)
+        last_draft = draft
+        feedback = _problems(draft, need, allowed, facts, prices, names)
         if not feedback:
             return RankingResult(
                 order=draft.ranking,
                 reasons={cid: [Reason(**r.model_dump()) for r in draft.reasons[cid]] for cid in draft.ranking},
             )
-    raise RankingError("；".join(feedback) or "模型输出不合格")
+    salvaged = _salvage(last_draft, need, allowed, facts, prices, names)
+    order = _priority_order(candidates, last_draft.ranking if last_draft else [], salvaged, need)
+    return RankingResult(
+        order=order,
+        reasons={cid: salvaged.get(cid) or [fallback_reason(need, names)] for cid in order},
+    )

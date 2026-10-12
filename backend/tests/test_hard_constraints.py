@@ -35,8 +35,51 @@ def test_candidate_within_hard_budget_passes():
     assert check(budget(), price(599900)).status == "pass"
 
 
-def test_budget_with_unknown_strictness_does_not_exclude():
-    assert check(budget(strictness="unknown"), price(699900)).status == "pass"
+def test_budget_is_hard_even_when_strictness_is_unknown():
+    assert check(budget(strictness="unknown"), price(699900)).status == "excluded"
+
+
+def _priced(candidate_id, amount):
+    item = price(amount)
+    return item.model_copy(update={"candidate_id": candidate_id})
+
+
+def test_laptop_budget_allows_five_hundred_yuan_outside_each_end():
+    need = NeedProfile(
+        category_id="laptop",
+        option_answers=[OptionAnswer(question_id="budget", option_ids=["5000_8000"])],
+    )
+    result = check_hard_constraints(need, {
+        "c1": _priced("c1", 850000),
+        "c2": _priced("c2", 850100),
+        "c3": _priced("c3", 450000),
+        "c4": _priced("c4", 449900),
+    })
+    assert result["c1"].status == "pass"
+    assert result["c2"].status == "excluded"
+    assert result["c3"].status == "pass"
+    assert result["c4"].status == "excluded"
+
+
+def test_monitor_and_headphones_allow_one_hundred_fifty_yuan():
+    for category_id, option_id, low, high in (
+        ("monitor", "1000_2000", 100000, 200000),
+        ("headphones", "300_1000", 30000, 100000),
+    ):
+        need = NeedProfile(
+            category_id=category_id,
+            option_answers=[OptionAnswer(question_id="budget", option_ids=[option_id])],
+        )
+        result = check_hard_constraints(need, {
+            "c1": _priced("c1", high + 15000),
+            "c2": _priced("c2", high + 15100),
+            "c3": _priced("c3", low - 15000),
+            "c4": _priced("c4", low - 15100),
+        })
+        assert result["c1"].status == "pass"
+        assert result["c2"].status == "excluded"
+        assert result["c3"].status == "pass"
+        assert result["c4"].status == "excluded"
 
 
 def test_unknown_price_is_neither_excluded_nor_treated_as_within_budget():

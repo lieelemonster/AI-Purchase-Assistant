@@ -1,10 +1,8 @@
 import asyncio
 import json
 
-import pytest
-
 from app.adapters.model.fake import FakeModelGateway
-from app.core.recommendation.ranking import RankingError, rank_and_explain
+from app.core.recommendation.ranking import rank_and_explain
 from app.core.verification.prompt_boundary import build_model_prompt, page_links_are_not_fetched
 from app.schemas.candidate import Candidate
 from app.schemas.evidence import PriceFact, VerifiedFact
@@ -29,8 +27,10 @@ def test_model_cannot_add_a_candidate_or_a_one_yuan_price():
                              "text": "价格 1 元"}]},
     }
     model = FakeModelGateway([json.dumps(obeyed, ensure_ascii=False), json.dumps(obeyed, ensure_ascii=False)])
-    with pytest.raises(RankingError):
-        asyncio.run(rank_and_explain(need, candidates, facts, prices, model))
+    result = asyncio.run(rank_and_explain(need, candidates, facts, prices, model))
+    assert result.order == ["c1"]
+    assert result.reasons["c1"][0].fact_refs == []
+    assert "1" not in result.reasons["c1"][0].text
     assert prices["c1"].amount_minor is None
     assert [item.candidate_id for item in candidates] == ["c1"]
 

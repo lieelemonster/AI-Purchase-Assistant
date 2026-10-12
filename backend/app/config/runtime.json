@@ -4,10 +4,10 @@
   "max_pages": 12,
   "max_page_bytes": 2000000,
   "call_timeout_s": 20,
-  "request_timeout_s": 120,
+  "request_timeout_s": null,
   "max_retries": 1,
-  "concurrency": 4,
-  "source_min_interval_s": 2,
+  "concurrency": 1,
+  "source_min_interval_s": 6,
   "model_max_output_tokens": 4000,
   "rate_limit_per_minute": 30,
   "max_concurrent_requests": 2

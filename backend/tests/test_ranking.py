@@ -5,7 +5,7 @@ import pytest
 
 from app.adapters.model.base import ModelGatewayError
 from app.adapters.model.fake import FakeModelGateway
-from app.core.recommendation.ranking import RankingError, rank_and_explain
+from app.core.recommendation.ranking import rank_and_explain
 from app.schemas.candidate import Candidate
 from app.schemas.evidence import PriceFact, VerifiedFact
 from app.schemas.need import NeedProfile, Requirement
@@ -60,22 +60,28 @@ def test_candidate_outside_the_allowed_set_is_rejected_then_retried():
     assert "c9" in " ".join(model.calls[1]["payload"]["previous_problems"])
 
 
-def test_reference_to_a_missing_fact_fails_after_retry():
+def test_reference_to_a_missing_fact_falls_back_without_that_fact():
     bad = draft(["c1", "c2", "c3"], {c: [reason(c, fact_refs=["f99"])] for c in ["c1", "c2", "c3"]})
-    with pytest.raises(RankingError, match="f99"):
-        rank(bad, bad)
+    result, model = rank(bad, bad)
+    assert len(model.calls) == 2
+    assert result.order == ["c1", "c2", "c3"]
+    assert result.reasons["c1"][0].fact_refs == []
+    assert "按需求优先级判断" in result.reasons["c1"][0].limitations[0]
 
 
-def test_fact_of_another_candidate_cannot_be_cited():
+def test_fact_of_another_candidate_is_not_kept():
     bad = draft(["c1", "c2", "c3"], {"c1": [reason("c1", fact_refs=["f2"])], "c2": [reason("c2")], "c3": [reason("c3")]})
-    with pytest.raises(RankingError, match="不属于它"):
-        rank(bad, bad)
+    result, _ = rank(bad, bad)
+    assert result.reasons["c1"][0].fact_refs == []
+    assert result.reasons["c2"][0].fact_refs == ["f2"]
+    assert result.order[0] == "c2"
 
 
-def test_reason_without_need_refs_is_rejected():
+def test_reason_without_need_refs_falls_back_to_priority():
     bad = draft(["c1", "c2", "c3"], {c: [reason(c, need_refs=())] for c in ["c1", "c2", "c3"]})
-    with pytest.raises(RankingError, match="不存在的需求"):
-        rank(bad, bad)
+    result, _ = rank(bad, bad)
+    assert result.reasons["c1"][0].need_refs == ["r1"]
+    assert result.reasons["c1"][0].fact_refs == []
 
 
 def test_unknown_topic_can_be_referenced_as_a_limitation():
@@ -85,10 +91,38 @@ def test_unknown_topic_can_be_referenced_as_a_limitation():
     assert result.reasons["c1"][1].need_refs == ["unknown:budget"]
 
 
-def test_price_placeholder_for_unknown_price_is_rejected():
+def test_price_placeholder_for_unknown_price_is_not_shown():
     bad = draft(["c2", "c1", "c3"], {"c2": [reason("c2", text="价格{{price:c2}}很合适")], "c1": [reason("c1")], "c3": [reason("c3")]})
-    with pytest.raises(RankingError, match="price:c2"):
-        rank(bad, bad)
+    result, _ = rank(bad, bad)
+    assert result.reasons["c2"][0].fact_refs == []
+    assert "price:c2" not in result.reasons["c2"][0].text
+    assert result.reasons["c1"][0].fact_refs == ["f1"]
+
+
+def test_cited_higher_priority_need_ranks_ahead_of_an_uncited_one():
+    need = NeedProfile(
+        category_id="laptop",
+        requirements=[
+            Requirement(requirement_id="r1", topic="portability", statement="必须轻便", strictness="hard",
+                        source={"kind": "option", "question_id": "portability", "option_id": "often"}),
+            Requirement(requirement_id="r2", topic="screen", statement="屏幕舒服一点", strictness="soft",
+                        source={"kind": "free_text", "quote": "屏幕舒服一点"}),
+        ],
+    )
+    replies = draft(
+        ["c1", "c2", "c3"],
+        {
+            "c1": [reason("c1", fact_refs=["f99"], need_refs=("r1",))],
+            "c2": [reason("c2", need_refs=("r1",))],
+            "c3": [reason("c3", need_refs=("r2",))],
+        },
+    )
+    model = FakeModelGateway([replies, replies])
+    result = asyncio.run(rank_and_explain(need, CANDIDATES, FACTS, PRICES, model))
+    assert result.order == ["c2", "c3", "c1"]
+    assert result.reasons["c2"][0].fact_refs == ["f2"]
+    assert result.reasons["c1"][0].fact_refs == []
+    assert "必须轻便" in result.reasons["c1"][0].text
 
 
 def test_fewer_than_three_allowed_candidates_means_shorter_ranking():

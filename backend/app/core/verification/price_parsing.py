@@ -6,6 +6,7 @@ from app.schemas.evidence import EvidenceDocument, PriceFact
 
 # 报价页正文中参考价跨多行，例如“参考价：\n￥\n4199\n（行货价格）”。只认带“行货价格”标注的单个金额（D-09）。
 REFERENCE_PRICE = re.compile(r"参考价\s*[:：]\s*[￥¥]\s*([\d,]+(?:\.\d{1,2})?)\s*（行货价格）")
+HOME_PRICE = re.compile(r"首页价格\s*[:：]\s*[￥¥]\s*([\d,]+(?:\.\d{1,2})?)")
 MINOR_UNIT_DIGITS = 2
 
 
@@ -19,13 +20,18 @@ def _to_minor(amount_text: str):
 
 
 def parse_reference_price(doc: EvidenceDocument, candidate_id: str, variant_name: str, multi_config: bool) -> PriceFact:
-    """从太平洋报价页解析“参考价（行货价格）”；经销商报价不用。查不到时价格为未知，金额为空，不用 0 代替。"""
+    """优先用产品首页上这一款自己的标价；没有时再认报价页的“参考价（行货价格）”。
+
+    经销商报价和旁边对比机型的价格不用。查不到时价格为未知，金额为空，不用 0 代替。
+    """
     unknown = PriceFact(candidate_id=candidate_id, variant_identity=variant_name, status="unknown")
     if doc.fetch_status != "ok":
         return unknown
-    # 只认页面上第一次出现的“参考价”：本机没有参考价时，不能取到下方其他型号的参考价。
-    first = doc.text.find("参考价")
-    match = REFERENCE_PRICE.match(doc.text, first) if first != -1 else None
+    match = HOME_PRICE.search(doc.text)
+    if match is None:
+        # 只认页面上第一次出现的“参考价”：本机没有参考价时，不能取到下方其他型号的参考价。
+        first = doc.text.find("参考价")
+        match = REFERENCE_PRICE.match(doc.text, first) if first != -1 else None
     if match is None:
         return unknown
     amount_minor = _to_minor(match.group(1))

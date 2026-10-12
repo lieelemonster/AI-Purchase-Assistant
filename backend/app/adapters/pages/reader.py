@@ -1,4 +1,6 @@
+import asyncio
 import hashlib
+import re
 from datetime import datetime, timezone
 from typing import List, NamedTuple, Optional, Tuple
 from urllib.parse import urljoin
@@ -36,12 +38,14 @@ class PageReader:
         max_redirects: int = 5,
         resolve: Resolver = system_resolve,
         transport: Optional[httpx.AsyncBaseTransport] = None,
+        retry_wait_s: float = 8,
     ):
         self._max_page_bytes = max_page_bytes
         self._timeout_s = timeout_s
         self._max_redirects = max_redirects
         self._resolve = resolve
         self._transport = transport
+        self._retry_wait_s = retry_wait_s
 
     async def read(self, url: str, evidence_id: str) -> EvidenceDocument:
         fetched_at = datetime.now(timezone.utc)
@@ -67,19 +71,28 @@ class PageReader:
     async def fetch(self, url: str) -> FetchedPage:
         """经过安全检查和体积限制取回原始 HTML；失败时抛出 FetchError。"""
         current = url
+        hops = 0
+        server_busy = 0
         async with httpx.AsyncClient(
             transport=self._transport,
             timeout=self._timeout_s,
             follow_redirects=False,
             headers={"User-Agent": USER_AGENT},
         ) as client:
-            for hop in range(self._max_redirects + 1):
-                await self._check(current, is_redirect=hop > 0)
+            while hops <= self._max_redirects:
+                await self._check(current, is_redirect=hops > 0)
                 try:
                     async with client.stream("GET", current) as resp:
-                        if resp.is_redirect:
-                            current = urljoin(current, resp.headers["location"])
+                        location = resp.headers.get("location")
+                        if resp.is_redirect and location:
+                            current = urljoin(current, location)
+                            hops += 1
                             continue
+                        if resp.status_code == 503 and server_busy < 1:
+                            server_busy += 1
+                            await asyncio.sleep(self._retry_wait_s)
+                            continue
+                        # 产品首页有时用 302 返回完整 HTML，且不带 Location。
                         return FetchedPage(current, await self._read_body(resp), resp.charset_encoding)
                 except httpx.TimeoutException as e:
                     raise FetchError("timeout") from e
@@ -112,9 +125,19 @@ class PageReader:
         return bytes(body)
 
 
+def _homepage_price(soup) -> Optional[str]:
+    """产品首页上这一款自己的标价。旁边对比机型的价格用的是别的标记，不取。"""
+    node = soup.select_one("span.product-meta__ecoPrice")
+    if node is None:
+        return None
+    match = re.search(r"[￥¥]\s*([\d,]+(?:\.\d{1,2})?)", node.get_text(" ", strip=True))
+    return match.group(1) if match else None
+
+
 def extract_page(body: bytes, charset: Optional[str] = None, base_url: str = "") -> Tuple[Optional[str], str, List[str]]:
     """返回标题、正文和页面中的链接（已转为绝对地址，去重，最多 MAX_LINKS 条）。"""
     soup = BeautifulSoup(body, "html.parser", from_encoding=charset)
+    home_price = _homepage_price(soup)
     title = soup.title.get_text(strip=True) if soup.title else None
     hrefs = (a.get("href", "").strip() for a in soup.find_all("a"))
     links = list(dict.fromkeys(urljoin(base_url, h) for h in hrefs if h and not h.startswith(("#", "javascript:"))))
@@ -124,4 +147,7 @@ def extract_page(body: bytes, charset: Optional[str] = None, base_url: str = "")
         cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
         row.replace_with(soup.new_string(" | ".join(c for c in cells if c)))
     lines = (" ".join(line.split()) for line in soup.get_text("\n").splitlines())
-    return title or None, "\n".join(line for line in lines if line), links[:MAX_LINKS]
+    text = "\n".join(line for line in lines if line)
+    if home_price:
+        text = f"首页价格：￥{home_price}\n{text}"
+    return title or None, text, links[:MAX_LINKS]

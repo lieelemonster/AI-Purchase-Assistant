@@ -92,6 +92,17 @@ def test_unreadable_page_gives_unknown_price():
     assert (price.status, price.amount_minor) == ("unknown", None)
 
 
+def test_homepage_price_is_the_products_own_price():
+    html = """
+    <html><head><title>示例本报价</title></head><body>
+      <span class="product-meta__ecoPrice">¥4699</span>
+      <span class="panel_peers_price">¥8999</span>
+      <span class="u-price">¥10999</span>
+    </body></html>"""
+    _, price = parse(html)
+    assert (price.status, price.amount_minor) == ("supported", 469900)
+
+
 def test_own_reference_price_wins_over_other_models_listed_below():
     _, price = parse(price_page("￥ 5999 （行货价格）"))
     assert price.amount_minor == 599900

@@ -46,16 +46,25 @@ def get_model() -> ModelGateway:
     return DeepSeekGateway(secrets.model_api_key.get_secret_value(), timeout_s=config.call_timeout_s)
 
 
-def get_reader() -> PageReaderLike:
-    config = load_runtime_config()
-    raw = PageReader(max_page_bytes=config.max_page_bytes, timeout_s=config.call_timeout_s)
-    return CachedPageReader(ThrottledReader(raw, Throttle(config.source_min_interval_s)))
+def _source_throttle(request: Request) -> Throttle:
+    """搜索和读页面共用一把锁，避免两路请求同时打到太平洋电脑网。"""
+    throttle = getattr(request.app.state, "source_throttle", None)
+    if throttle is None:
+        throttle = Throttle(load_runtime_config().source_min_interval_s)
+        request.app.state.source_throttle = throttle
+    return throttle
 
 
-def get_catalog() -> CatalogLike:
+def get_reader(request: Request) -> PageReaderLike:
     config = load_runtime_config()
-    raw = PageReader(max_page_bytes=config.max_page_bytes, timeout_s=config.call_timeout_s)
-    return PconlineCatalog(ThrottledReader(raw, Throttle(config.source_min_interval_s)))
+    raw = PageReader(max_page_bytes=config.max_page_bytes, timeout_s=config.call_timeout_s, retry_wait_s=8)
+    return CachedPageReader(ThrottledReader(raw, _source_throttle(request)))
+
+
+def get_catalog(request: Request) -> CatalogLike:
+    config = load_runtime_config()
+    raw = PageReader(max_page_bytes=config.max_page_bytes, timeout_s=config.call_timeout_s, retry_wait_s=8)
+    return PconlineCatalog(ThrottledReader(raw, _source_throttle(request)))
 
 
 def get_config() -> RuntimeConfig:

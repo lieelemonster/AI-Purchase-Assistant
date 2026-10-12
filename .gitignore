@@ -8,6 +8,7 @@ __pycache__/
 *.py[cod]
 .venv/
 .pytest_cache/
+backend/data/
 
 # Flutter / Dart
 mobile/.dart_tool/

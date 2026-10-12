@@ -81,7 +81,8 @@ void main() {
     api.healthOk = true;
     await tester.tap(find.text('重试'));
     await tester.pumpAndSettle();
-    expect(find.text('已连接'), findsOneWidget);
+    expect(find.text('想买什么？'), findsOneWidget);
+    expect(find.text('无法连接后端'), findsNothing);
     expect(find.text('耳机'), findsOneWidget);
   });
 
@@ -202,9 +203,10 @@ void main() {
     expect(find.text('适合性判断'), findsOneWidget);
     expect(find.textContaining('续航官方数据未查到'), findsOneWidget);
     expect(find.textContaining('1.2kg'), findsWidgets);
-    await _scrollTo(tester, find.textContaining('https://example.com/laptop-a/specs'));
-    expect(find.textContaining('https://example.com/laptop-a/specs'), findsOneWidget);
-    expect(find.textContaining('来源：太平洋电脑网'), findsWidgets);
+    await _scrollTo(tester, find.text('重量'));
+    expect(find.text('重量'), findsWidgets);
+    expect(find.text('资料来源'), findsNothing);
+    expect(find.textContaining('https://example.com/laptop-a/specs'), findsNothing);
     expect(find.textContaining('购买'), findsNothing);
     await tester.tap(find.byIcon(Icons.arrow_back));
     await tester.pumpAndSettle();

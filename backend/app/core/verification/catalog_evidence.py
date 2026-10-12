@@ -83,12 +83,13 @@ async def collect_catalog_evidence(
     max_pages: int,
     concurrency: int,
 ) -> CatalogEvidenceSet:
-    """每个匹配到的配置读取参数页和报价页；读取失败的保留为 unavailable，跳出太平洋配置页的跳过。"""
+    """先读产品首页取价格，再读参数页。读取失败的保留为 unavailable，跳出太平洋配置页的跳过。"""
     matched = [m for m in matches if m.status == "matched" and m.hit is not None][: max_pages // PAGES_PER_MATCH]
-    plan = []
+    home_plan = []
+    detail_plan = []
     for i, match in enumerate(matched):
-        plan.append((match, "detail", match.hit.detail_url, f"e{2 * i + 1}"))
-        plan.append((match, "price", match.hit.price_url, f"e{2 * i + 2}"))
+        home_plan.append((match, "price", match.hit.url, f"e{2 * i + 1}"))
+        detail_plan.append((match, "detail", match.hit.detail_url, f"e{2 * i + 2}"))
 
     semaphore = asyncio.Semaphore(concurrency)
 
@@ -96,7 +97,13 @@ async def collect_catalog_evidence(
         async with semaphore:
             return await reader.read(url, evidence_id)
 
-    documents = await asyncio.gather(*(read(url, eid) for _, _, url, eid in plan))
+    async def read_plan(plan):
+        return await asyncio.gather(*(read(url, eid) for _, _, url, eid in plan))
+
+    home_docs = await read_plan(home_plan)
+    detail_docs = await read_plan(detail_plan)
+    plan = home_plan + detail_plan
+    documents = list(home_docs) + list(detail_docs)
 
     result = CatalogEvidenceSet()
     by_candidate: Dict[str, Dict[str, str]] = {}

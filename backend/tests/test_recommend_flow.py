@@ -35,7 +35,7 @@ def config(**updates):
 
 class Pages:
     async def read(self, url, evidence_id):
-        product_id = url.rstrip("/").split("/")[-1].split("_")[0]
+        product_id = url.rstrip("/").split("/")[-1].split("_")[0].split(".")[0]
         name = NAMES[product_id]
         if "_price" in url:
             text = f"参考价：￥{PRICES[product_id]}（行货价格）"

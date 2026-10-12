@@ -27,6 +27,14 @@ def format_price(price: PriceFact) -> str:
     return f"{symbol}{body}" if symbol in ("¥", "") else f"{symbol} {body}"
 
 
+def contains_unsupported_literal(text: str, names: Iterable[str]) -> bool:
+    try:
+        _guard(text, names)
+    except ReasonFillError:
+        return True
+    return False
+
+
 def _guard(text: str, names: Iterable[str]) -> None:
     visible = PLACEHOLDER.sub(" ", text)
     if BARE_NUMBER_OR_CURRENCY.search(visible):
@@ -76,13 +84,15 @@ def fill_reasons(
     by_id = {fact.fact_id: fact for fact in facts}
     filled = []
     for reason in reasons:
-        filled.append(reason.model_copy(update={
-            "text": fill_reason_text(
+        try:
+            text = fill_reason_text(
                 reason.text,
                 candidate=candidate,
                 facts=by_id,
                 prices=prices,
                 names=names,
             )
-        }))
+        except ReasonFillError:
+            continue
+        filled.append(reason.model_copy(update={"text": text}))
     return filled

@@ -29,7 +29,7 @@ class RuntimeConfig(BaseModel):
     max_pages: PositiveInt
     max_page_bytes: PositiveInt
     call_timeout_s: PositiveFloat
-    request_timeout_s: PositiveFloat
+    request_timeout_s: Optional[PositiveFloat]
     max_retries: NonNegativeInt
     concurrency: PositiveInt
     source_min_interval_s: NonNegativeFloat

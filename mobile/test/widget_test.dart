@@ -36,7 +36,7 @@ void main() {
   testWidgets('home lists five categories and shows connected', (tester) async {
     await tester.pumpWidget(BuyFlow(api: _Fake()));
     await tester.pumpAndSettle();
-    expect(find.text('已连接'), findsOneWidget);
+    expect(find.text('想买什么？'), findsOneWidget);
     expect(find.text('笔记本电脑'), findsOneWidget);
     expect(find.text('耳机'), findsOneWidget);
   });

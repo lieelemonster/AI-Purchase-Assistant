@@ -27,7 +27,7 @@ async def fake_resolve(host):
 
 def read(handler, url="https://shop.example/a", max_page_bytes=100_000):
     reader = PageReader(max_page_bytes=max_page_bytes, timeout_s=5, resolve=fake_resolve,
-                        transport=httpx.MockTransport(handler))
+                        transport=httpx.MockTransport(handler), retry_wait_s=0)
     return asyncio.run(reader.read(url, evidence_id="e1"))
 
 
@@ -100,8 +100,33 @@ def test_non_html_content_is_rejected():
     assert doc.failure_reason == "not_html"
 
 
+def test_busy_page_is_retried_until_it_loads():
+    calls = {"n": 0}
+
+    def handler(request):
+        calls["n"] += 1
+        if calls["n"] < 2:
+            return html(b"<html><title>503</title></html>", status=503)
+        return html(b"<html><head><title>ok</title></head><body>hello</body></html>")
+
+    doc = read(handler)
+    assert doc.fetch_status == "ok"
+    assert "hello" in doc.text
+    assert calls["n"] == 2
+
+
 def test_http_error_status_is_recorded():
     assert read(lambda request: html(b"not found", status=404)).failure_reason == "http_404"
+
+
+def test_redirect_without_location_keeps_the_html_body():
+    page = """<html><head><title>示例本报价</title></head><body>
+      <span class="product-meta__ecoPrice">¥4699</span>
+    </body></html>""".encode("utf-8")
+    doc = read(lambda request: html(page, status=302))
+    assert doc.fetch_status == "ok"
+    assert doc.final_url == "https://shop.example/a"
+    assert doc.text.startswith("首页价格：￥4699")
 
 
 def test_redirect_loop_stops():

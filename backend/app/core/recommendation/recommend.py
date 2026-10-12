@@ -14,11 +14,11 @@ from app.core.needs.follow_up import plan_follow_up
 from app.core.needs.normalize import normalize_needs
 from app.core.recommendation.assemble import assemble_result
 from app.core.recommendation.hard_constraints import check_hard_constraints
-from app.core.recommendation.ranking import RankingError, rank_and_explain
+from app.core.recommendation.ranking import RankingError, fallback_reason, rank_and_explain
 from app.core.recommendation.reason_fill import ReasonFillError, fill_reasons
 from app.core.verification.budget import SearchBudget
-from app.core.verification.catalog_evidence import Throttle, ThrottledReader, collect_catalog_evidence
-from app.core.verification.catalog_identity import verify_catalog_identity
+from app.core.verification.catalog_evidence import collect_catalog_evidence
+from app.core.verification.catalog_identity import _product_id, verify_catalog_identity
 from app.core.verification.catalog_match import CatalogLike
 from app.core.verification.catalog_policies import dedupe_same_model, discover_candidates, match_with_retry, result_status
 from app.core.verification.conflicts import mark_field_conflicts
@@ -81,13 +81,14 @@ async def _recommend(
 
     evidence = await collect_catalog_evidence(
         matches,
-        ThrottledReader(reader, Throttle(config.source_min_interval_s)),
+        reader,
         max_pages=config.max_pages,
-        concurrency=config.concurrency,
+        concurrency=1,
     )
     mark("读取")
     table = load_field_table(request.category_id)
     fact_ids = itertools.count(1)
+    price_fallback_ids = itertools.count(900)
     facts: Dict[str, List[VerifiedFact]] = {}
     prices: Dict[str, PriceFact] = {}
     unresolved: List[UnresolvedItem] = []
@@ -117,6 +118,13 @@ async def _recommend(
             match.hit.name,
             identity.multi_config,
         )
+        if price.status != "supported":
+            fallback = await reader.read(match.hit.price_url, f"e{next(price_fallback_ids)}")
+            if _product_id(fallback) == match.hit.product_id:
+                parsed = parse_reference_price(fallback, match.candidate_id, match.hit.name, identity.multi_config)
+                if parsed.status == "supported":
+                    evidence.documents[fallback.evidence_id] = fallback
+                    price = parsed
         facts[match.candidate_id] = identity.facts
         prices[match.candidate_id] = price
         usable.append(candidate)
@@ -136,16 +144,16 @@ async def _recommend(
     )
     mark("排序")
     names = [candidate.model_hint for candidate in usable]
-    filled = {
-        candidate.candidate_id: fill_reasons(
+    filled = {}
+    for candidate in usable:
+        reasons = fill_reasons(
             ranked.reasons.get(candidate.candidate_id, []),
             candidate=candidate,
             facts=facts.get(candidate.candidate_id, []),
             prices=prices,
             names=names,
         )
-        for candidate in usable
-    }
+        filled[candidate.candidate_id] = reasons or [fallback_reason(need, names)]
     ordered = [by_id[candidate_id] for candidate_id in ranked.order]
     shown_count = min(3, len(ordered))
     return assemble_result(
@@ -170,10 +178,10 @@ async def recommend(
 ) -> RecommendationResult:
     usage = start_usage()
     try:
-        return await asyncio.wait_for(
-            _recommend(request, model=model, catalog=catalog, reader=reader, config=config),
-            timeout=config.request_timeout_s,
-        )
+        job = _recommend(request, model=model, catalog=catalog, reader=reader, config=config)
+        if config.request_timeout_s is None:
+            return await job
+        return await asyncio.wait_for(job, timeout=config.request_timeout_s)
     except asyncio.TimeoutError:
         return _empty(request.request_id, "timeout")
     except ModelGatewayError:

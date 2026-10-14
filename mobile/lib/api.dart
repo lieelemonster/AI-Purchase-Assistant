@@ -29,6 +29,10 @@ abstract class BuyApi {
 String defaultBaseUrl() {
   const defined = String.fromEnvironment('API_BASE');
   if (defined.isNotEmpty) return defined;
+  // Release / Profile builds talk to the deployed Aliyun API by default.
+  if (kReleaseMode || kProfileMode) {
+    return 'http://47.111.129.166/buy-api';
+  }
   if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) return 'http://10.0.2.2:8000';
   return 'http://127.0.0.1:8000';
 }

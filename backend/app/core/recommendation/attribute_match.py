@@ -16,6 +16,7 @@ class Check:
     check_id: str
     label: str
     ok: CheckFn
+    required: bool = False
 
 
 def _text(product: LibraryProduct, field: str) -> str:
@@ -25,6 +26,11 @@ def _text(product: LibraryProduct, field: str) -> str:
 def _known(text: str) -> bool:
     value = (text or "").strip()
     return bool(value) and value not in {"未确认", "未标注", "不适用"}
+
+
+def _is_ios(text: str) -> bool:
+    """只认独立的 iOS，不把 OriginOS、Flyme AIOS 里的字母串算进去。"""
+    return re.search(r"(?<![A-Za-z])iOS(?![A-Za-z])", text or "", flags=re.I) is not None
 
 
 def _gb(text: str) -> Optional[int]:
@@ -104,17 +110,24 @@ def _tablet_flagship(text: str) -> bool:
     return _phone_flagship(text) or bool(re.search(r"Apple M|M[1-5]", text))
 
 
+def _mentioned(trigger: str, free_text: str) -> bool:
+    """英文触发词按整词、忽略大小写匹配，避免 iOS 写不中、也避免 BIOS 被当成 iOS。"""
+    if trigger.isascii() and trigger.isalpha():
+        return re.search(rf"(?<![A-Za-z]){re.escape(trigger)}(?![A-Za-z])", free_text, flags=re.I) is not None
+    return trigger in free_text
+
+
 def _checks_for(category_id: str, selected: set, free_text: str) -> List[Check]:
     found: List[Check] = []
     seen = set()
 
-    def add(check_id: str, label: str, ok: CheckFn, *triggers: str) -> None:
+    def add(check_id: str, label: str, ok: CheckFn, *triggers: str, required: bool = False) -> None:
         if check_id in seen:
             return
-        if not any(trigger in selected or trigger in free_text for trigger in triggers):
+        if not any(trigger in selected or _mentioned(trigger, free_text) for trigger in triggers):
             return
         seen.add(check_id)
-        found.append(Check(check_id, label, ok))
+        found.append(Check(check_id, label, ok, required))
 
     if category_id == "laptop":
         add("mem16", "内存至少 16GB", lambda p: (_gb(_text(p, "memory")) or 0) >= 16, "office", "programming", "creative")
@@ -129,8 +142,8 @@ def _checks_for(category_id: str, selected: set, free_text: str) -> List[Check]:
         add("desk15", "屏幕至少 15 英寸", lambda p: (_inches(_text(p, "screen_size")) or 0) >= 15, "desk")
         add("size1314", "屏幕在 13–14.9 英寸", lambda p: 13 <= (_inches(_text(p, "screen_size")) or 0) < 15, "13_14")
         add("size1516", "屏幕在 15–16.9 英寸", lambda p: 15 <= (_inches(_text(p, "screen_size")) or 0) < 17, "15_16")
-        add("macos", "系统为 macOS", lambda p: "macOS" in _text(p, "os") or "Apple" in _text(p, "processor"), "macos")
-        add("windows", "系统为 Windows", lambda p: "Windows" in _text(p, "os"), "windows")
+        add("macos", "系统为 macOS", lambda p: "macOS" in _text(p, "os") or "Apple" in _text(p, "processor"), "macos", required=True)
+        add("windows", "系统为 Windows", lambda p: "Windows" in _text(p, "os"), "windows", required=True)
         add("battery75", "电池至少 75Wh", lambda p: (_wh(_text(p, "battery_capacity")) or 0) >= 75, "battery", "续航")
         add("hz120", "屏幕刷新率至少 120Hz", lambda p: (_hz(_text(p, "refresh_rate")) or 0) >= 120, "screen")
         add("perf", "处理器或显卡属于高性能", lambda p: (_rtx(_text(p, "gpu")) or 0) >= 4060 or any(word in _text(p, "processor") for word in ("Ultra 7", "Ultra 9", "i7", "i9", "HX", "M4", "M5")), "performance", "性能")
@@ -147,9 +160,9 @@ def _checks_for(category_id: str, selected: set, free_text: str) -> List[Check]:
         add("bat5500", "电池至少 5500mAh", lambda p: (_mah(_text(p, "battery_capacity")) or 0) >= 5500, "battery", "续航")
         add("big", "屏幕至少 6.7 英寸", lambda p: (_inches(_text(p, "screen_size")) or 0) >= 6.7, "elder", "big_screen", "大屏")
         add("compact", "重量不超过 190g", lambda p: (_grams(_text(p, "weight")) or 9999) <= 190, "compact", "轻薄", "小巧")
-        add("ios", "系统为 iOS", lambda p: "iOS" in _text(p, "os"), "ios")
-        add("android", "系统为安卓或基于安卓的系统", lambda p: _known(_text(p, "os")) and "iOS" not in _text(p, "os"), "android")
-        add("updates", "系统版本较新", lambda p: any(word in _text(p, "os") for word in ("iOS", "Android 15", "Android 16", "Android 17", "HyperOS", "OriginOS 5", "OriginOS 6", "OriginOS 7")), "long_updates")
+        add("ios", "系统为 iOS", lambda p: _is_ios(_text(p, "os")), "ios", required=True)
+        add("android", "系统为安卓或基于安卓的系统", lambda p: _known(_text(p, "os")) and not _is_ios(_text(p, "os")), "android", required=True)
+        add("updates", "系统版本较新", lambda p: _is_ios(_text(p, "os")) or any(word in _text(p, "os") for word in ("Android 15", "Android 16", "Android 17", "HyperOS", "OriginOS 5", "OriginOS 6", "OriginOS 7")), "long_updates")
     elif category_id == "tablet":
         add("screen11", "屏幕至少 11 英寸", lambda p: (_inches(_text(p, "screen_size")) or 0) >= 11, "entertainment")
         add("battery", "电池至少 8000mAh 或 30Wh", lambda p: (_mah(_text(p, "battery_capacity")) or 0) >= 8000 or (_wh(_text(p, "battery_capacity")) or 0) >= 30, "entertainment")
@@ -162,8 +175,8 @@ def _checks_for(category_id: str, selected: set, free_text: str) -> List[Check]:
         add("hz120", "屏幕刷新率至少 120Hz", lambda p: (_hz(_text(p, "refresh_rate")) or 0) >= 120, "gaming")
         add("around11", "屏幕小于 12 英寸", lambda p: 0 < (_inches(_text(p, "screen_size")) or 99) < 12, "around_11")
         add("size12", "屏幕至少 12 英寸", lambda p: (_inches(_text(p, "screen_size")) or 0) >= 12, "12_13")
-        add("apple", "系统为 iPadOS", lambda p: "iPadOS" in _text(p, "os") or "iOS" in _text(p, "os"), "apple")
-        add("android", "系统不是 iPadOS", lambda p: _known(_text(p, "os")) and "iPadOS" not in _text(p, "os") and "iOS" not in _text(p, "os"), "android_windows")
+        add("apple", "系统为 iPadOS", lambda p: "iPadOS" in _text(p, "os") or _is_ios(_text(p, "os")), "apple", required=True)
+        add("android", "系统不是 iPadOS", lambda p: _known(_text(p, "os")) and "iPadOS" not in _text(p, "os") and not _is_ios(_text(p, "os")), "android_windows", required=True)
     elif category_id == "headphones":
         add("anc", "支持降噪", lambda p: _text(p, "anc").startswith("有"), "commute", "anc", "降噪")
         add("ip", "防护等级至少 IPX4 或 IP54", lambda p: bool(re.search(r"IPX?[4-9]", _text(p, "ip_rating"), flags=re.I)), "sports", "waterproof", "防水")
@@ -193,6 +206,11 @@ def _selected(option_answers: Sequence[OptionAnswer], free_text: str) -> set:
     return selected
 
 
+def _passes_required(product: LibraryProduct, checks: Sequence[Check]) -> bool:
+    """系统偏好必须命中。系统对不上，或系统为空、未确认时，都不进入推荐。"""
+    return all(check.ok(product) for check in checks if check.required)
+
+
 def rank_by_attributes(
     category_id: str,
     option_answers: Sequence[OptionAnswer],
@@ -200,8 +218,9 @@ def rank_by_attributes(
     products: Sequence[LibraryProduct],
 ) -> List[CatalogChoice]:
     checks = _checks_for(category_id, _selected(option_answers, free_text), free_text or "")
+    eligible = [product for product in products if _passes_required(product, checks)]
     scored: List[Tuple[int, tuple, int, LibraryProduct, List[str]]] = []
-    for product in products:
+    for product in eligible:
         labels = [check.label for check in checks if check.ok(product)]
         scored.append((len(labels), _release_key(product), -product.row_id, product, labels))
     scored.sort(reverse=True)
